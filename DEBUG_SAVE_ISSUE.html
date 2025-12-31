@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Save Issue - Panduan Lengkap</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; border-color: #bee5eb; }
+        .warning { background: #fff3cd; border-color: #ffeaa7; }
+        .step { margin: 10px 0; padding: 10px; background: #f8f9fa; border-left: 4px solid #007bff; }
+        .code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+        .highlight { background: yellow; padding: 2px 4px; font-weight: bold; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Debug Save Issue - Panduan Lengkap</h1>
+    
+    <div class="section error">
+        <h3>🚨 Masalah Saat Ini</h3>
+        <p><strong>Issue:</strong> Data masih tidak bisa disimpan meskipun sudah ada perbaikan</p>
+        <p><strong>Gejala:</strong> Form terlihat bisa diedit tapi saat klik "Simpan" tidak ada respons atau error</p>
+    </div>
+
+    <div class="section success">
+        <h3>✅ Perbaikan yang Sudah Diterapkan</h3>
+        <ol>
+            <li><strong>Enhanced Logging:</strong> Ditambahkan logging detail di controller</li>
+            <li><strong>Debug Controller:</strong> Dibuat controller khusus untuk testing</li>
+            <li><strong>JavaScript Debugging:</strong> Ditambahkan console logging yang komprehensif</li>
+            <li><strong>Database Status:</strong> Dipastikan status pengiriman adalah 'draft'</li>
+        </ol>
+    </div>
+
+    <div class="section info">
+        <h3>🧪 Langkah-Langkah Debug</h3>
+        
+        <div class="step">
+            <h4>Step 1: Cek Debug Pages</h4>
+            <p>Akses halaman debug untuk memeriksa status sistem:</p>
+            <ul>
+                <li><a href="http://localhost:8080/debug/check-database" target="_blank">Check Database</a> - Periksa data di database</li>
+                <li><a href="http://localhost:8080/debug/check-session" target="_blank">Check Session</a> - Periksa session user</li>
+                <li><a href="http://localhost:8080/debug/test-save" target="_blank">Test Save</a> - Test penyimpanan data</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h4>Step 2: Login dan Cek Console</h4>
+            <ol>
+                <li>Buka browser dalam mode incognito/private</li>
+                <li>Login: <a href="http://localhost:8080/auth/login" target="_blank">http://localhost:8080/auth/login</a></li>
+                <li>Username: <span class="code">admin_unit</span>, Password: <span class="code">password123</span></li>
+                <li>Buka Developer Tools (F12) dan pergi ke tab Console</li>
+                <li>Akses dashboard: <a href="http://localhost:8080/admin-unit/dashboard" target="_blank">Dashboard</a></li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h4>Step 3: Periksa Debug Info</h4>
+            <p>Di dashboard, periksa:</p>
+            <ul>
+                <li><span class="highlight">DEBUG INFO box</span> - Harus menunjukkan "Can Edit: TRUE"</li>
+                <li><span class="highlight">Browser Console</span> - Cari pesan debug JavaScript</li>
+                <li>Pastikan tidak ada error merah di console</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h4>Step 4: Test Form Save dengan Monitoring</h4>
+            <ol>
+                <li>Buka kategori WS (Waste)</li>
+                <li>Isi form dengan data test:</li>
+                <ul>
+                    <li><strong>Tanggal Input:</strong> Hari ini</li>
+                    <li><strong>Gedung:</strong> Gedung A</li>
+                    <li><strong>Jumlah:</strong> 100</li>
+                    <li><strong>Satuan:</strong> kg</li>
+                    <li><strong>Deskripsi:</strong> Test data untuk debugging sistem UIGM</li>
+                </ul>
+                <li><span class="highlight">Buka tab Network di Developer Tools</span></li>
+                <li>Klik tombol "Simpan"</li>
+                <li>Perhatikan request yang muncul di tab Network</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h4>Step 5: Analisis Response</h4>
+            <p>Di tab Network, cari request ke <span class="code">/admin-unit/simpan-kategori</span>:</p>
+            <ul>
+                <li><strong>Status Code:</strong> Harus 200</li>
+                <li><strong>Response:</strong> Periksa isi response JSON</li>
+                <li><strong>Request Payload:</strong> Pastikan data terkirim dengan benar</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section warning">
+        <h3>⚠️ Kemungkinan Penyebab Masalah</h3>
+        
+        <h4>1. JavaScript Error</h4>
+        <ul>
+            <li>Cek console untuk error JavaScript</li>
+            <li>Pastikan jQuery loaded dengan benar</li>
+            <li>Periksa apakah event handler terpasang</li>
+        </ul>
+
+        <h4>2. AJAX Request Gagal</h4>
+        <ul>
+            <li>Cek tab Network untuk melihat request</li>
+            <li>Periksa status code dan response</li>
+            <li>Pastikan URL endpoint benar</li>
+        </ul>
+
+        <h4>3. Server-side Error</h4>
+        <ul>
+            <li>Cek log file di <span class="code">writable/logs/</span></li>
+            <li>Periksa error PHP atau database</li>
+            <li>Pastikan model dan controller berfungsi</li>
+        </ul>
+
+        <h4>4. Database Issue</h4>
+        <ul>
+            <li>Pastikan tabel review_kategori ada</li>
+            <li>Cek foreign key constraints</li>
+            <li>Periksa permission database</li>
+        </ul>
+    </div>
+
+    <div class="section info">
+        <h3>🔍 Checklist Debug</h3>
+        
+        <h4>✅ Yang Harus Berhasil:</h4>
+        <ul>
+            <li>Debug pages dapat diakses tanpa error</li>
+            <li>Session menunjukkan user admin_unit yang valid</li>
+            <li>Database menunjukkan pengiriman dengan status 'draft'</li>
+            <li>Console menunjukkan CAN_EDIT = true</li>
+            <li>Form fields tidak readonly</li>
+            <li>AJAX request terkirim ke server</li>
+            <li>Server response dengan success: true</li>
+        </ul>
+
+        <h4>❌ Indikator Masalah:</h4>
+        <ul>
+            <li>Debug pages menunjukkan error</li>
+            <li>Console menunjukkan CAN_EDIT = false</li>
+            <li>JavaScript errors di console</li>
+            <li>AJAX request tidak muncul di Network tab</li>
+            <li>Server response dengan success: false</li>
+            <li>Error 500 atau 404 di Network tab</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h3>📋 Data Test yang Direkomendasikan</h3>
+        <pre>
+Tanggal Input: <?= date('Y-m-d') ?>
+
+Gedung: Gedung A
+Jenis Sampah: Organik (untuk kategori WS)
+Jumlah: 100
+Satuan: kg
+Deskripsi: Test data untuk debugging sistem UIGM - ini adalah deskripsi yang cukup panjang untuk memenuhi validasi minimal 10 karakter
+Target/Rencana: Meningkatkan pengelolaan sampah organik
+Catatan: Catatan tambahan untuk testing
+        </pre>
+    </div>
+
+    <div class="section error">
+        <h3>🆘 Jika Masih Bermasalah</h3>
+        <p>Jika setelah mengikuti semua langkah di atas masih bermasalah, lakukan:</p>
+        <ol>
+            <li><strong>Screenshot:</strong> Ambil screenshot dari DEBUG INFO box</li>
+            <li><strong>Console Log:</strong> Copy semua pesan di browser console</li>
+            <li><strong>Network Tab:</strong> Screenshot dari tab Network saat klik Simpan</li>
+            <li><strong>Debug Pages:</strong> Screenshot hasil dari semua debug pages</li>
+        </ol>
+        <p>Informasi ini akan membantu mengidentifikasi masalah yang tepat.</p>
+    </div>
+
+    <script>
+        // Auto refresh untuk memastikan data terbaru
+        console.log('Debug page loaded. Server time:', new Date().toLocaleString());
+        
+        // Test basic JavaScript functionality
+        if (typeof $ !== 'undefined') {
+            console.log('✅ jQuery loaded');
+        } else {
+            console.error('❌ jQuery not loaded');
+        }
+    </script>
+</body>
+</html>

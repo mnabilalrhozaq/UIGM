@@ -142,7 +142,7 @@
             <p>Setelah login berhasil, Anda akan diarahkan ke dashboard sesuai role:</p>
             <ul>
                 <li><a href="/admin-pusat/dashboard">Dashboard Admin Pusat</a></li>
-                <li><a href="/admin-unit/dashboard">Dashboard Admin Unit</a></li>
+                <li><a href="/user/kriteria">Dashboard User (Waste Management)</a></li>
                 <li><a href="/super-admin/dashboard">Dashboard Super Admin</a></li>
             </ul>
             <p><em>Catatan: Link di atas akan redirect ke login jika belum login.</em></p>

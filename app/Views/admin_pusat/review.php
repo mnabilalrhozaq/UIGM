@@ -1,72 +1,8 @@
-<!DOCTYPE html>
-<html lang="id">
+<?= $this->extend('layouts/admin_pusat_new') ?>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?></title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<?= $this->section('content') ?>
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fa;
-            color: #333;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #5c8cbf 0%, #4a7ba7 100%);
-            color: white;
-            padding: 20px 0;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header h1 {
-            font-size: 24px;
-            font-weight: 600;
-        }
-
-        .header-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .logout-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 14px;
-            transition: background 0.3s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-
+<style>
         .nav-links {
             display: flex;
             gap: 20px;
@@ -75,7 +11,7 @@
 
         .nav-link {
             background: white;
-            color: #5c8cbf;
+            color: #4a90e2;
             padding: 12px 24px;
             border-radius: 8px;
             text-decoration: none;
@@ -85,25 +21,9 @@
         }
 
         .nav-link:hover {
-            background: #5c8cbf;
+            background: #4a90e2;
             color: white;
             transform: translateY(-2px);
-        }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-
-        .card-header {
-            background: #5c8cbf;
-            color: white;
-            padding: 20px;
-            font-size: 18px;
-            font-weight: 600;
         }
 
         .card-body {
@@ -354,41 +274,23 @@
             }
         }
     </style>
-</head>
 
-<body>
-    <div class="header">
-        <div class="header-content">
-            <div>
-                <h1><i class="fas fa-clipboard-check"></i> Review Data UIGM</h1>
-                <p><?= $pengiriman['nama_unit'] ?> - <?= $pengiriman['tahun'] ?></p>
-            </div>
-            <div class="header-info">
-                <span><?= $user['nama_lengkap'] ?></span>
-                <a href="/auth/logout" class="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-        </div>
-    </div>
+<!-- Navigation Links -->
+<div class="nav-links">
+    <a href="<?= base_url('/admin-pusat/dashboard') ?>" class="nav-link">
+        <i class="fas fa-home"></i> Dashboard
+    </a>
+    <a href="<?= base_url('/admin-pusat/monitoring') ?>" class="nav-link">
+        <i class="fas fa-chart-line"></i> Monitoring Unit
+    </a>
+    <a href="<?= base_url('/admin-pusat/notifikasi') ?>" class="nav-link">
+        <i class="fas fa-bell"></i> Notifikasi
+    </a>
+</div>
 
-    <div class="container">
-        <!-- Navigation Links -->
-        <div class="nav-links">
-            <a href="/admin-pusat/dashboard" class="nav-link">
-                <i class="fas fa-home"></i> Dashboard
-            </a>
-            <a href="/admin-pusat/monitoring" class="nav-link">
-                <i class="fas fa-chart-line"></i> Monitoring Unit
-            </a>
-            <a href="/admin-pusat/notifikasi" class="nav-link">
-                <i class="fas fa-bell"></i> Notifikasi
-            </a>
-        </div>
-
-        <!-- Unit Information -->
-        <div class="unit-info">
-            <h3><i class="fas fa-building"></i> Informasi Pengiriman</h3>
+<!-- Unit Information -->
+<div class="unit-info">
+    <h3><i class="fas fa-building"></i> Informasi Pengiriman - <?= $pengiriman['nama_unit'] ?> (<?= $pengiriman['tahun'] ?>)</h3>
             <div class="info-grid">
                 <div class="info-item">
                     <div class="info-label">Unit</div>
@@ -438,7 +340,7 @@
                         <div class="data-section">
                             <div class="data-label">Data yang Dikirim:</div>
                             <?php if ($review && !empty($review['data_input'])): ?>
-                                <?php $dataInput = json_decode($review['data_input'], true); ?>
+                                <?php $dataInput = safe_json_decode($review['data_input'], true); ?>
                                 <div class="data-content">
                                     <?php if (is_array($dataInput)): ?>
                                         <?php foreach ($dataInput as $key => $value): ?>
@@ -571,6 +473,7 @@
             <?php endforeach; ?>
         });
     </script>
-</body>
+<?= $this->endSection() ?>
 
-</html>
+<?= $this->section('scripts') ?>
+<script>

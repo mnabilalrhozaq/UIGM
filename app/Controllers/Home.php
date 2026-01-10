@@ -4,24 +4,29 @@ namespace App\Controllers;
 
 class Home extends BaseController
 {
+    /**
+     * Home page - redirects to appropriate dashboard based on user role
+     * 
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
     public function index()
     {
-        // Redirect ke login jika belum login
-        if (!session()->get('isLoggedIn')) {
-            return redirect()->to('/auth/login');
-        }
-
-        // Redirect ke dashboard sesuai role jika sudah login
+        // Check if user is logged in
         $user = session()->get('user');
-        switch ($user['role']) {
-            case 'admin_pusat':
-                return redirect()->to('/admin-pusat/dashboard');
-            case 'admin_unit':
-                return redirect()->to('/admin-unit/dashboard');
-            case 'super_admin':
-                return redirect()->to('/super-admin/dashboard');
-            default:
-                return redirect()->to('/auth/login');
+        
+        if (session()->get('isLoggedIn') && $user) {
+            $role = $user['role'] ?? null;
+            
+            // Redirect to appropriate dashboard based on role using match expression
+            return match ($role) {
+                'admin_pusat', 'super_admin' => redirect()->to('/admin-pusat/dashboard'),
+                'user' => redirect()->to('/user/dashboard'),
+                'pengelola_tps' => redirect()->to('/pengelola-tps/dashboard'),
+                default => redirect()->to('/auth/login')
+            };
         }
+        
+        // If not logged in, redirect to login
+        return redirect()->to('/auth/login');
     }
 }

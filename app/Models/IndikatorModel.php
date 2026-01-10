@@ -16,7 +16,7 @@ class IndikatorModel extends Model
         'kode_kategori',
         'nama_kategori',
         'deskripsi',
-        'bobot',
+        'bobot_persen',
         'warna',
         'urutan',
         'status_aktif'
@@ -26,7 +26,7 @@ class IndikatorModel extends Model
     protected bool $updateOnlyChanged = true;
 
     protected array $casts = [
-        'bobot' => 'float',
+        'bobot_persen' => 'float',
         'urutan' => 'int',
         'status_aktif' => 'boolean',
     ];
@@ -43,7 +43,7 @@ class IndikatorModel extends Model
     protected $validationRules      = [
         'kode_kategori' => 'required|max_length[10]|is_unique[indikator.kode_kategori,id,{id}]',
         'nama_kategori' => 'required|max_length[255]',
-        'bobot' => 'required|decimal|greater_than[0]|less_than_equal_to[100]',
+        'bobot_persen' => 'required|decimal|greater_than[0]|less_than_equal_to[100]',
         'urutan' => 'required|integer|greater_than[0]',
     ];
     protected $validationMessages   = [
@@ -54,7 +54,7 @@ class IndikatorModel extends Model
         'nama_kategori' => [
             'required' => 'Nama kategori harus diisi'
         ],
-        'bobot' => [
+        'bobot_persen' => [
             'required' => 'Bobot harus diisi',
             'greater_than' => 'Bobot harus lebih dari 0'
         ]
@@ -122,7 +122,7 @@ class IndikatorModel extends Model
                 'kode_kategori' => 'SI',
                 'nama_kategori' => 'Setting & Infrastructure',
                 'deskripsi' => 'Pengaturan dan Infrastruktur kampus yang mendukung keberlanjutan',
-                'bobot' => 15.00,
+                'bobot_persen' => 15.00,
                 'warna' => '#2E8B57',
                 'urutan' => 1,
                 'status_aktif' => true
@@ -131,7 +131,7 @@ class IndikatorModel extends Model
                 'kode_kategori' => 'EC',
                 'nama_kategori' => 'Energy & Climate Change',
                 'deskripsi' => 'Penggunaan energi dan upaya mitigasi perubahan iklim',
-                'bobot' => 21.00,
+                'bobot_persen' => 21.00,
                 'warna' => '#FFD700',
                 'urutan' => 2,
                 'status_aktif' => true
@@ -140,7 +140,7 @@ class IndikatorModel extends Model
                 'kode_kategori' => 'WS',
                 'nama_kategori' => 'Waste',
                 'deskripsi' => 'Pengelolaan limbah dan daur ulang',
-                'bobot' => 18.00,
+                'bobot_persen' => 18.00,
                 'warna' => '#8B4513',
                 'urutan' => 3,
                 'status_aktif' => true
@@ -149,7 +149,7 @@ class IndikatorModel extends Model
                 'kode_kategori' => 'WR',
                 'nama_kategori' => 'Water',
                 'deskripsi' => 'Konservasi dan penggunaan air',
-                'bobot' => 10.00,
+                'bobot_persen' => 10.00,
                 'warna' => '#1E90FF',
                 'urutan' => 4,
                 'status_aktif' => true
@@ -158,7 +158,7 @@ class IndikatorModel extends Model
                 'kode_kategori' => 'TR',
                 'nama_kategori' => 'Transportation',
                 'deskripsi' => 'Kebijakan transportasi berkelanjutan',
-                'bobot' => 18.00,
+                'bobot_persen' => 18.00,
                 'warna' => '#DC143C',
                 'urutan' => 5,
                 'status_aktif' => true
@@ -167,7 +167,7 @@ class IndikatorModel extends Model
                 'kode_kategori' => 'ED',
                 'nama_kategori' => 'Education & Research',
                 'deskripsi' => 'Pendidikan dan penelitian keberlanjutan',
-                'bobot' => 18.00,
+                'bobot_persen' => 18.00,
                 'warna' => '#5c8cbf',
                 'urutan' => 6,
                 'status_aktif' => true
@@ -189,11 +189,11 @@ class IndikatorModel extends Model
      */
     public function validateTotalWeight()
     {
-        $totalWeight = $this->selectSum('bobot')
+        $totalWeight = $this->selectSum('bobot_persen')
             ->where('status_aktif', true)
             ->get()
             ->getRow()
-            ->bobot;
+            ->bobot_persen;
 
         return abs($totalWeight - 100.00) < 0.01; // Allow small floating point differences
     }

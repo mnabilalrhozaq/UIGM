@@ -27,9 +27,9 @@ class Database extends Config
     public array $default = [
         'DSN'          => '',
         'hostname'     => 'localhost',
-        'username'     => '',
+        'username'     => 'root',
         'password'     => '',
-        'database'     => '',
+        'database' => 'eksperimen',
         'DBDriver'     => 'MySQLi',
         'DBPrefix'     => '',
         'pConnect'     => false,
@@ -57,7 +57,7 @@ class Database extends Config
     //     * @var array<string, mixed>
     //     */
     //    public array $default = [
-    //        'database'    => 'database.db',
+    //        'database' => 'eksperimen',
     //        'DBDriver'    => 'SQLite3',
     //        'DBPrefix'    => '',
     //        'DBDebug'     => true,
@@ -83,7 +83,7 @@ class Database extends Config
     //        'hostname'   => 'localhost',
     //        'username'   => 'root',
     //        'password'   => 'root',
-    //        'database'   => 'ci4',
+    //        'database' => 'eksperimen',
     //        'schema'     => 'public',
     //        'DBDriver'   => 'Postgre',
     //        'DBPrefix'   => '',
@@ -110,7 +110,7 @@ class Database extends Config
     //        'hostname'   => 'localhost',
     //        'username'   => 'root',
     //        'password'   => 'root',
-    //        'database'   => 'ci4',
+    //        'database' => 'eksperimen',
     //        'schema'     => 'dbo',
     //        'DBDriver'   => 'SQLSRV',
     //        'DBPrefix'   => '',
@@ -167,7 +167,7 @@ class Database extends Config
         'hostname'    => '127.0.0.1',
         'username'    => '',
         'password'    => '',
-        'database'    => ':memory:',
+        'database' => 'eksperimen',
         'DBDriver'    => 'SQLite3',
         'DBPrefix'    => 'db_',  // Needed to ensure we're working correctly with prefixes live. DO NOT REMOVE FOR CI DEVS
         'pConnect'    => false,

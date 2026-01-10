@@ -5,113 +5,99 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
+
+// Default route
 $routes->get('/', 'Home::index');
 
-// Auth Routes
+// Auth Routes (Public)
 $routes->group('auth', function ($routes) {
     $routes->get('login', 'Auth::login');
+    $routes->get('test-login', 'Auth::testLogin');
     $routes->post('process-login', 'Auth::processLogin');
     $routes->get('logout', 'Auth::logout');
 });
 
-// Demo Routes
-$routes->get('demo/login', function () {
-    return view('demo/login_preview');
-});
-$routes->get('demo/admin-unit', function () {
-    return view('demo/admin_unit_preview');
-});
-$routes->get('demo/info', function () {
-    return view('demo/login_info');
-});
-
-// Test Routes
-$routes->get('test/login', function () {
-    return view('test/login_test');
-});
-
-// Admin Unit Routes (Protected)
-$routes->group('admin-unit', ['filter' => 'auth'], function ($routes) {
-    $routes->get('/', 'AdminUnit::index');
-    $routes->get('dashboard', 'AdminUnit::index');
-    $routes->post('simpan-kategori', 'AdminUnit::simpanKategori');
-    $routes->post('kirim-data', 'AdminUnit::kirimData');
-
-    // Debug route untuk testing
-    if (ENVIRONMENT === 'development') {
-        $routes->get('test-save', function () {
-            echo "Test route works!";
-        });
-    }
+// ================================================
+// ADMIN ROUTES (Role: admin_pusat, super_admin)
+// ================================================
+$routes->group('admin-pusat', ['filter' => 'role:admin_pusat,super_admin'], function ($routes) {
+    // Load all admin routes from separate files
+    require APPPATH . 'Config/Routes/Admin/dashboard.php';
+    require APPPATH . 'Config/Routes/Admin/harga.php';
+    require APPPATH . 'Config/Routes/Admin/feature_toggle.php';
+    require APPPATH . 'Config/Routes/Admin/user_management.php';
+    require APPPATH . 'Config/Routes/Admin/waste.php';
+    require APPPATH . 'Config/Routes/Admin/review.php';
+    require APPPATH . 'Config/Routes/Admin/laporan.php';
+    require APPPATH . 'Config/Routes/Admin/pengaturan.php';
 });
 
-// Admin Pusat Routes (Protected)
-$routes->group('admin-pusat', ['filter' => 'auth'], function ($routes) {
-    $routes->get('/', 'AdminPusat::index');
-    $routes->get('dashboard', 'AdminPusat::index');
-    $routes->get('review/(:num)', 'AdminPusat::review/$1');
-    $routes->post('update-review', 'AdminPusat::updateReview');
-    $routes->post('finalize-pengiriman', 'AdminPusat::finalizePengiriman');
-    $routes->post('return-for-revision', 'AdminPusat::returnForRevision');
-    $routes->get('monitoring', 'AdminPusat::monitoring');
-    $routes->get('notifikasi', 'AdminPusat::notifikasi');
+// ================================================
+// USER ROUTES (Role: user)
+// ================================================
+$routes->group('user', ['filter' => 'role:user'], function ($routes) {
+    // Dashboard
+    $routes->get('dashboard', 'User\\Dashboard::index');
+    $routes->get('/', 'User\\Dashboard::index');
+    
+    // Waste Management
+    $routes->get('waste', 'User\\Waste::index');
+    $routes->get('waste/get/(:num)', 'User\\Waste::get/$1');
+    $routes->post('waste/save', 'User\\Waste::save');
+    $routes->post('waste/edit/(:num)', 'User\\Waste::edit/$1');
+    $routes->delete('waste/delete/(:num)', 'User\\Waste::delete/$1');
+    $routes->get('waste/export', 'User\\Waste::export');
+    
+    // Dashboard API
+    $routes->get('dashboard/api-stats', 'User\\Dashboard::apiStats');
 });
 
-// Super Admin Routes (Protected)
-$routes->group('super-admin', ['filter' => 'auth'], function ($routes) {
-    $routes->get('/', 'SuperAdmin::index');
-    $routes->get('dashboard', 'SuperAdmin::index');
-
-    // User Management
-    $routes->get('users', 'SuperAdmin::users');
-    $routes->post('users/create', 'SuperAdmin::createUser');
-    $routes->post('users/update', 'SuperAdmin::updateUser');
-    $routes->delete('users/delete/(:num)', 'SuperAdmin::deleteUser/$1');
-
-    // Unit Management
-    $routes->get('units', 'SuperAdmin::units');
-    $routes->post('units/create', 'SuperAdmin::createUnit');
-    $routes->post('units/update', 'SuperAdmin::updateUnit');
-
-    // Tahun Penilaian Management
-    $routes->get('tahun-penilaian', 'SuperAdmin::tahunPenilaian');
-    $routes->post('tahun-penilaian/create', 'SuperAdmin::createTahunPenilaian');
+// ================================================
+// TPS ROUTES (Role: pengelola_tps)
+// ================================================
+$routes->group('pengelola-tps', ['filter' => 'role:pengelola_tps'], function ($routes) {
+    // Dashboard
+    $routes->get('dashboard', 'TPS\\Dashboard::index');
+    $routes->get('/', 'TPS\\Dashboard::index');
+    
+    // Waste Management
+    $routes->get('waste', 'TPS\\Waste::index');
+    $routes->post('waste/save', 'TPS\\Waste::save');
+    $routes->post('waste/edit/(:num)', 'TPS\\Waste::edit/$1');
+    $routes->delete('waste/delete/(:num)', 'TPS\\Waste::delete/$1');
+    $routes->get('waste/export', 'TPS\\Waste::export');
 });
 
-// File Upload Routes (Protected)
-$routes->group('file', ['filter' => 'auth'], function ($routes) {
-    $routes->post('upload', 'FileController::upload');
-    $routes->get('download/(:num)/(:num)/(:any)', 'FileController::download/$1/$2/$3');
-    $routes->post('delete', 'FileController::delete');
-    $routes->get('list/(:num)/(:num)', 'FileController::listFiles/$1/$2');
-});
-
-// API Routes (Protected)
+// ================================================
+// API ROUTES (Protected)
+// ================================================
 $routes->group('api', ['filter' => 'auth'], function ($routes) {
-    $routes->get('dashboard-stats', 'ApiController::getDashboardStats');
-    $routes->get('notifications', 'ApiController::getNotifications');
-    $routes->get('notifications/unread-count', 'ApiController::getUnreadCount');
-    $routes->post('notifications/(:num)/read', 'ApiController::markNotificationRead/$1');
-    $routes->post('notifications/mark-all-read', 'ApiController::markAllNotificationsRead');
-    $routes->get('unit-progress/(:num)', 'ApiController::getUnitProgress/$1');
-    $routes->get('unit-progress', 'ApiController::getUnitProgress');
-    $routes->get('search-units', 'ApiController::searchUnits');
-    $routes->get('category/(:num)', 'ApiController::getCategoryDetails/$1');
-    $routes->get('jenis-sampah/area/(:num)', 'ApiController::getAreaSampah/$1');
-    $routes->get('jenis-sampah/detail/(:num)', 'ApiController::getDetailSampah/$1');
-    $routes->get('jenis-sampah/struktur', 'ApiController::getSampahOrganikStructure');
+    $routes->get('dashboard/stats', 'Api\\DashboardApi::getStats');
+    $routes->get('waste/summary', 'Api\\WasteApi::getSummary');
+    $routes->post('notifications/mark-read/(:num)', 'Api\\NotificationController::markAsRead/$1');
 });
 
-// Debug Routes (Development only)
-if (ENVIRONMENT === 'development') {
-    $routes->get('debug/test-save', 'DebugController::testSave');
-    $routes->get('debug/check-session', 'DebugController::checkSession');
-    $routes->get('debug/check-database', 'DebugController::checkDatabase');
-}
-
-// Report Routes (Protected)
-$routes->group('report', ['filter' => 'auth'], function ($routes) {
-    $routes->get('/', 'ReportController::index');
-    $routes->get('export-csv', 'ReportController::exportCSV');
-    $routes->get('generate-pdf', 'ReportController::generatePDF');
+// ================================================
+// FALLBACK & ERROR HANDLING
+// ================================================
+$routes->set404Override(function() {
+    $user = session()->get('user');
+    
+    if (!$user || !session()->get('isLoggedIn')) {
+        return redirect()->to('/auth/login')->with('error', 'Halaman tidak ditemukan. Silakan login terlebih dahulu.');
+    }
+    
+    // Redirect to appropriate dashboard based on role
+    $role = $user['role'] ?? null;
+    switch ($role) {
+        case 'admin_pusat':
+        case 'super_admin':
+            return redirect()->to('/admin-pusat/dashboard')->with('error', 'Halaman tidak ditemukan. Anda dialihkan ke dashboard.');
+        case 'user':
+            return redirect()->to('/user/dashboard')->with('error', 'Halaman tidak ditemukan. Anda dialihkan ke dashboard.');
+        case 'pengelola_tps':
+            return redirect()->to('/pengelola-tps/dashboard')->with('error', 'Halaman tidak ditemukan. Anda dialihkan ke dashboard.');
+        default:
+            return redirect()->to('/auth/login')->with('error', 'Halaman tidak ditemukan dan role tidak valid.');
+    }
 });

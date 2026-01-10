@@ -1,12 +1,8 @@
-<!DOCTYPE html>
-<html lang="id">
+<?= $this->extend('layouts/admin_pusat_new') ?>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?></title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
+<?= $this->section('content') ?>
+
+<style>
         * {
             margin: 0;
             padding: 0;
@@ -622,36 +618,14 @@
     </style>
 </head>
 
-<body>
-    <div class="header">
-        <div class="header-content">
-            <div class="header-left">
-                <h1><i class="fas fa-bell"></i> Notifikasi Admin Pusat</h1>
-                <p>Kelola dan pantau semua notifikasi sistem</p>
-            </div>
-            <div class="header-right">
-                <div class="user-info">
-                    <div class="user-avatar">
-                        <i class="fas fa-user-shield"></i>
-                    </div>
-                    <span><?= $user['nama_lengkap'] ?></span>
-                </div>
-                <a href="/admin-pusat/dashboard" class="back-btn">
-                    <i class="fas fa-arrow-left"></i> Kembali
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="container">
-        <!-- Navigation Section -->
-        <div class="nav-section">
-            <div class="nav-links">
-                <a href="/admin-pusat/dashboard" class="nav-link">
-                    <i class="fas fa-home"></i>
-                    Dashboard
-                </a>
-                <a href="/admin-pusat/monitoring" class="nav-link">
+<!-- Navigation Section -->
+<div class="nav-section">
+    <div class="nav-links">
+        <a href="<?= base_url('/admin-pusat/dashboard') ?>" class="nav-link">
+            <i class="fas fa-home"></i>
+            Dashboard
+        </a>
+        <a href="<?= base_url('/admin-pusat/monitoring') ?>" class="nav-link">
                     <i class="fas fa-chart-line"></i>
                     Monitoring Unit
                 </a>
@@ -821,9 +795,156 @@
     <script>
         // Mark single notification as read
         function markAsRead(notificationId) {
-            fetch(`/api/notifications/${notificationId}/read`, {
+            const formData = new FormData();
+            formData.append('notification_id', notificationId);
+
+            fetch('<?= base_url('/admin-pusat/mark-notification-read') ?>', {
                     method: 'POST',
-                    headers: {
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update UI
+                        const notifItem = document.querySelector(`[data-id="${notificationId}"]`);
+                        if (notifItem) {
+                            notifItem.classList.remove('unread');
+                            const markBtn = notifItem.querySelector('.mark-read-btn');
+                            if (markBtn) {
+                                markBtn.remove();
+                            }
+                        }
+                        
+                        // Update counter
+                        updateUnreadCount();
+                        showToast('Notifikasi ditandai sebagai sudah dibaca', 'success');
+                    } else {
+                        showToast(data.message || 'Gagal menandai notifikasi', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Terjadi kesalahan', 'error');
+                });
+        }
+
+        // Mark all notifications as read
+        function markAllAsRead() {
+            if (!confirm('Tandai semua notifikasi sebagai sudah dibaca?')) {
+                return;
+            }
+
+            fetch('<?= base_url('/admin-pusat/mark-all-notifications-read') ?>', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update UI
+                        document.querySelectorAll('.notifikasi-item.unread').forEach(item => {
+                            item.classList.remove('unread');
+                            const markBtn = item.querySelector('.mark-read-btn');
+                            if (markBtn) {
+                                markBtn.remove();
+                            }
+                        });
+                        
+                        // Hide mark all button
+                        const markAllBtn = document.querySelector('button[onclick="markAllAsRead()"]');
+                        if (markAllBtn) {
+                            markAllBtn.style.display = 'none';
+                        }
+                        
+                        // Update counter
+                        updateUnreadCount();
+                        showToast('Semua notifikasi ditandai sebagai sudah dibaca', 'success');
+                    } else {
+                        showToast(data.message || 'Gagal menandai notifikasi', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Terjadi kesalahan', 'error');
+                });
+        }
+
+        // Update unread count
+        function updateUnreadCount() {
+            fetch('<?= base_url('/admin-pusat/get-unread-count') ?>')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update parent window notification count if in iframe
+                        if (window.parent && window.parent !== window) {
+                            window.parent.postMessage({
+                                type: 'updateNotificationCount',
+                                count: data.unread_count
+                            }, '*');
+                        }
+                    }
+                })
+                .catch(error => console.error('Error updating count:', error));
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                min-width: 300px;
+                animation: slideInRight 0.3s ease;
+            `;
+
+            // Set background color based on type
+            switch (type) {
+                case 'success':
+                    toast.style.backgroundColor = '#28a745';
+                    break;
+                case 'error':
+                    toast.style.backgroundColor = '#dc3545';
+                    break;
+                case 'warning':
+                    toast.style.backgroundColor = '#ffc107';
+                    toast.style.color = '#212529';
+                    break;
+                default:
+                    toast.style.backgroundColor = '#17a2b8';
+            }
+
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" 
+                            style="background: none; border: none; color: inherit; font-size: 18px; cursor: pointer; margin-left: auto;">
+                        &times;
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(toast);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+
+        // Auto refresh notifications every 30 seconds
+        setInterval(() => {
+            location.reload();
+        }, 30000);
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     }
@@ -976,6 +1097,10 @@
             });
         });
     </script>
-</body>
+<?= $this->endSection() ?>
 
-</html>
+<?= $this->section('scripts') ?>
+<script>
+    // Additional scripts if needed
+</script>
+<?= $this->endSection() ?>

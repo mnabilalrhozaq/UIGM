@@ -35,6 +35,9 @@ class Filters extends BaseFilters
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
         'auth'          => \App\Filters\AuthFilter::class,
+        'role'          => \App\Filters\RoleFilter::class,
+        'session_security' => \App\Filters\SessionSecurityFilter::class,
+        'security_headers' => \App\Filters\SecurityHeadersFilter::class,
     ];
 
     /**
@@ -73,13 +76,10 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
-            // 'honeypot',
-            // 'csrf',
-            // 'invalidchars',
+            'invalidchars',
         ],
         'after' => [
-            // 'honeypot',
-            // 'secureheaders',
+            'security_headers', // Re-enabled with fixed implementation
         ],
     ];
 
@@ -107,5 +107,12 @@ class Filters extends BaseFilters
      *
      * @var array<string, array<string, list<string>>>
      */
-    public array $filters = [];
+    public array $filters = [
+        'csrf' => [
+            'before' => [
+                'user/*',
+                'admin-pusat/*'
+            ]
+        ]
+    ];
 }

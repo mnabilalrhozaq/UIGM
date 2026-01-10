@@ -224,7 +224,7 @@ class ReportController extends BaseController
                 <ol>';
 
         foreach ($categories as $category) {
-            $html .= '<li>' . $category['nama_kategori'] . ' (' . $category['kode_kategori'] . ') - Bobot: ' . $category['bobot'] . '%</li>';
+            $html .= '<li>' . $category['nama_kategori'] . ' (' . $category['kode_kategori'] . ') - Bobot: ' . $category['bobot_persen'] . '%</li>';
         }
 
         $html .= '

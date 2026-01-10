@@ -16,8 +16,7 @@ class UnitModel extends Model
         'nama_unit',
         'kode_unit',
         'tipe_unit',
-        'parent_id',
-        'admin_unit_id',
+        'deskripsi',
         'status_aktif'
     ];
 
@@ -123,18 +122,21 @@ class UnitModel extends Model
     }
 
     /**
-     * Get child units
+     * Get child units - DISABLED (parent_id column not available)
      */
+    /*
     public function getChildUnits(int $parentId)
     {
         return $this->where('parent_id', $parentId)
             ->where('status_aktif', true)
             ->findAll();
     }
+    */
 
     /**
-     * Get unit hierarchy
+     * Get unit hierarchy - DISABLED (parent_id column not available)
      */
+    /*
     public function getUnitHierarchy()
     {
         return $this->select('unit.*, parent.nama_unit as parent_name')
@@ -144,6 +146,7 @@ class UnitModel extends Model
             ->orderBy('unit.nama_unit')
             ->findAll();
     }
+    */
 
     /**
      * Get unit with admin information
@@ -153,5 +156,127 @@ class UnitModel extends Model
         return $this->select('unit.*, users.nama_lengkap as admin_name, users.email as admin_email')
             ->join('users', 'users.id = unit.admin_unit_id', 'left')
             ->find($unitId);
+    }
+
+    /**
+     * Get gedung berdasarkan nama unit
+     */
+    public function getGedungByUnit(string $namaUnit)
+    {
+        // Mapping unit ke gedung berdasarkan nama unit
+        $gedungMapping = [
+            // Fakultas
+            'Fakultas Teknik' => 'Gedung Teknik',
+            'Fakultas Ekonomi' => 'Gedung Ekonomi', 
+            'Fakultas MIPA' => 'Gedung MIPA',
+            'Fakultas Hukum' => 'Gedung Hukum',
+            'Fakultas Kedokteran' => 'Gedung Kedokteran',
+            'Fakultas Pertanian' => 'Gedung Pertanian',
+            'Fakultas Perikanan' => 'Gedung Perikanan',
+            
+            // Jurusan Teknik
+            'Jurusan Teknik Informatika' => 'Gedung D – Teknik Komputer dan Informatika',
+            'Jurusan Teknik Komputer' => 'Gedung D – Teknik Komputer dan Informatika',
+            'Jurusan Teknik Mesin' => 'Gedung Laboratorium Teknik Mesin',
+            'Jurusan Teknik Sipil' => 'Gedung Laboratorium Teknik Sipil',
+            'Jurusan Teknik Kimia' => 'Gedung Laboratorium Teknik Kimia',
+            'Jurusan Teknik Refrigerasi' => 'Gedung Laboratorium Teknik Refrigerasi dan Tata Udara',
+            'Jurusan Aeronautika' => 'Hanggar Aeronautika',
+            
+            // Jurusan Ekonomi
+            'Jurusan Akuntansi' => 'Gedung E – Akuntansi',
+            'Jurusan Manajemen' => 'Gedung B – Administrasi Niaga',
+            'Jurusan Administrasi Niaga' => 'Gedung B – Administrasi Niaga',
+            
+            // Unit Khusus
+            'Pascasarjana' => 'Gedung H – Pascasarjana',
+            'Rektorat' => 'Gedung Direktorat',
+            'Administrasi' => 'Gedung B – Administrasi Niaga',
+            'Perpustakaan' => 'Gedung A – Gedung Kuliah',
+            'Unit Penelitian' => 'Gedung F – Gedung Kuliah Baru',
+            'Unit Pengabdian Masyarakat' => 'Gedung C – Gedung Kuliah',
+            
+            // Default berdasarkan kata kunci
+            'Laboratorium' => 'Gedung Laboratorium',
+            'Lab' => 'Gedung Laboratorium'
+        ];
+
+        // Cari exact match dulu
+        if (isset($gedungMapping[$namaUnit])) {
+            return $gedungMapping[$namaUnit];
+        }
+
+        // Cari berdasarkan kata kunci
+        $namaUnitLower = strtolower($namaUnit);
+        
+        foreach ($gedungMapping as $unitKey => $gedung) {
+            $unitKeyLower = strtolower($unitKey);
+            
+            // Cek apakah nama unit mengandung kata kunci
+            if (strpos($namaUnitLower, $unitKeyLower) !== false || 
+                strpos($unitKeyLower, $namaUnitLower) !== false) {
+                return $gedung;
+            }
+        }
+
+        // Mapping berdasarkan kata kunci dalam nama unit
+        if (strpos($namaUnitLower, 'teknik') !== false) {
+            if (strpos($namaUnitLower, 'informatika') !== false || strpos($namaUnitLower, 'komputer') !== false) {
+                return 'Gedung D – Teknik Komputer dan Informatika';
+            } elseif (strpos($namaUnitLower, 'mesin') !== false) {
+                return 'Gedung Laboratorium Teknik Mesin';
+            } elseif (strpos($namaUnitLower, 'sipil') !== false) {
+                return 'Gedung Laboratorium Teknik Sipil';
+            } elseif (strpos($namaUnitLower, 'kimia') !== false) {
+                return 'Gedung Laboratorium Teknik Kimia';
+            } else {
+                return 'Gedung Teknik';
+            }
+        }
+
+        if (strpos($namaUnitLower, 'ekonomi') !== false || strpos($namaUnitLower, 'akuntansi') !== false) {
+            return strpos($namaUnitLower, 'akuntansi') !== false ? 'Gedung E – Akuntansi' : 'Gedung Ekonomi';
+        }
+
+        if (strpos($namaUnitLower, 'hukum') !== false) {
+            return 'Gedung Hukum';
+        }
+
+        if (strpos($namaUnitLower, 'mipa') !== false || strpos($namaUnitLower, 'matematika') !== false || strpos($namaUnitLower, 'fisika') !== false) {
+            return 'Gedung MIPA';
+        }
+
+        if (strpos($namaUnitLower, 'pascasarjana') !== false || strpos($namaUnitLower, 'magister') !== false || strpos($namaUnitLower, 'doktor') !== false) {
+            return 'Gedung H – Pascasarjana';
+        }
+
+        if (strpos($namaUnitLower, 'laboratorium') !== false || strpos($namaUnitLower, 'lab') !== false) {
+            return 'Gedung Laboratorium';
+        }
+
+        if (strpos($namaUnitLower, 'administrasi') !== false || strpos($namaUnitLower, 'niaga') !== false) {
+            return 'Gedung B – Administrasi Niaga';
+        }
+
+        if (strpos($namaUnitLower, 'rektorat') !== false || strpos($namaUnitLower, 'direktorat') !== false) {
+            return 'Gedung Direktorat';
+        }
+
+        // Default fallback
+        return 'Gedung A – Gedung Kuliah';
+    }
+
+    /**
+     * Get gedung for user berdasarkan unit_id
+     */
+    public function getGedungForUser(int $unitId)
+    {
+        $unit = $this->find($unitId);
+        
+        if (!$unit) {
+            return 'Gedung A – Gedung Kuliah'; // Default
+        }
+
+        return $this->getGedungByUnit($unit['nama_unit']);
     }
 }

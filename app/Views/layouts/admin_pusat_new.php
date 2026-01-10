@@ -469,6 +469,65 @@
             background: #357abd;
         }
 
+        /* Custom Button Styles */
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(92, 140, 191, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-outline-primary-custom {
+            border: 2px solid #4a90e2;
+            color: #4a90e2;
+            background: transparent;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .btn-outline-primary-custom:hover {
+            background: #4a90e2;
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-outline-primary {
+            border: 2px solid #4a90e2;
+            color: #4a90e2;
+            background: transparent;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .btn-outline-primary:hover {
+            background: #4a90e2;
+            color: white;
+            text-decoration: none;
+        }
+
         /* Progress Bars */
         .progress-item {
             margin-bottom: 20px;
@@ -562,27 +621,31 @@
                 <i class="fas fa-tachometer-alt"></i>
                 <span>Dashboard</span>
             </a>
-            <a href="<?= base_url('/admin-pusat/monitoring') ?>" class="menu-item">
-                <i class="fas fa-building"></i>
-                <span>Profil Kampus</span>
+            <a href="<?= base_url('/admin-pusat/review') ?>" class="menu-item">
+                <i class="fas fa-clipboard-check"></i>
+                <span>Review Data</span>
             </a>
-            <a href="#" class="menu-item">
-                <i class="fas fa-database"></i>
-                <span>Data Penilaian</span>
+            <a href="<?= base_url('/admin-pusat/waste') ?>" class="menu-item">
+                <i class="fas fa-trash-alt"></i>
+                <span>Waste Management</span>
             </a>
-            <a href="#" class="menu-item">
-                <i class="fas fa-chart-line"></i>
-                <span>Indikator GreenMetric</span>
+            <a href="<?= base_url('/admin-pusat/manajemen-harga') ?>" class="menu-item">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Manajemen Harga</span>
             </a>
-            <a href="<?= base_url('/report') ?>" class="menu-item">
-                <i class="fas fa-file-alt"></i>
-                <span>Laporan & Dokumen</span>
+            <a href="<?= base_url('/admin-pusat/user-management') ?>" class="menu-item">
+                <i class="fas fa-users"></i>
+                <span>User Management</span>
             </a>
-            <a href="#" class="menu-item">
-                <i class="fas fa-history"></i>
-                <span>Riwayat Penilaian</span>
+            <a href="<?= base_url('/admin-pusat/feature-toggle') ?>" class="menu-item">
+                <i class="fas fa-toggle-on"></i>
+                <span>Feature Toggle</span>
             </a>
-            <a href="#" class="menu-item">
+            <a href="<?= base_url('/admin-pusat/laporan') ?>" class="menu-item">
+                <i class="fas fa-chart-bar"></i>
+                <span>Laporan</span>
+            </a>
+            <a href="<?= base_url('/admin-pusat/pengaturan') ?>" class="menu-item">
                 <i class="fas fa-cog"></i>
                 <span>Pengaturan</span>
             </a>
@@ -603,11 +666,9 @@
                     <i class="fas fa-search"></i>
                     <input type="text" placeholder="Search...">
                 </div>
-                <div class="notification-icon">
+                <div class="notification-icon" onclick="window.location.href='<?= base_url('/admin-pusat/notifikasi') ?>'">
                     <i class="fas fa-bell"></i>
-                    <?php if (isset($notifikasi) && !empty($notifikasi)): ?>
-                        <span class="notification-badge"><?= count($notifikasi) ?></span>
-                    <?php endif; ?>
+                    <span class="notification-badge" id="notification-count" style="display: none;">0</span>
                 </div>
                 <div class="user-profile">
                     <div class="user-avatar">AP</div>
@@ -633,6 +694,38 @@
                     bar.style.width = width;
                 }, 500);
             });
+
+            // Set active menu item based on current URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            const menuItems = document.querySelectorAll('.menu-item');
+
+            menuItems.forEach(item => {
+                item.classList.remove('active');
+                const href = item.getAttribute('href');
+                if (href && currentPath.includes(href.replace(window.location.origin, ''))) {
+                    item.classList.add('active');
+                }
+            });
+
+            // If no specific match, highlight dashboard for admin-pusat paths
+            if (currentPath.includes('/admin-pusat') && !document.querySelector('.menu-item.active')) {
+                const dashboardLink = document.querySelector('a[href*="dashboard"]');
+                if (dashboardLink) {
+                    dashboardLink.classList.add('active');
+                }
+            }
+
+            // Animate progress bars on load
+            const progressBars = document.querySelectorAll('.progress-fill');
+            progressBars.forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 500);
+            });
+        });
         });
 
         // Mobile sidebar toggle
@@ -641,20 +734,30 @@
         }
 
         // Auto refresh notifications
-        setInterval(() => {
-            // Check for new notifications
-            fetch('<?= base_url('/api/notifications') ?>')
+        function updateNotificationCount() {
+            fetch('<?= base_url('/admin-pusat/get-unread-count') ?>')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.unread_count > 0) {
-                        const badge = document.querySelector('.notification-badge');
-                        if (badge) {
+                    if (data.success) {
+                        const badge = document.getElementById('notification-count');
+                        if (data.unread_count > 0) {
                             badge.textContent = data.unread_count;
+                            badge.style.display = 'flex';
+                        } else {
+                            badge.style.display = 'none';
                         }
                     }
                 })
-                .catch(error => console.log('Notification check failed'));
-        }, 60000);
+                .catch(error => console.log('Notification check failed:', error));
+        }
+
+        // Update notification count on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNotificationCount();
+        });
+
+        // Auto refresh every minute
+        setInterval(updateNotificationCount, 60000);
     </script>
 
     <?= $this->renderSection('scripts') ?>

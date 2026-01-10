@@ -23,7 +23,9 @@ class PengirimanUnitModel extends Model
         'reviewer_id',
         'catatan_admin_pusat',
         'catatan_admin_unit',
-        'versi'
+        'catatan_revisi',
+        'versi',
+        'created_by'
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -46,7 +48,7 @@ class PengirimanUnitModel extends Model
     protected $validationRules      = [
         'unit_id' => 'required|integer',
         'tahun_penilaian_id' => 'required|integer',
-        'status_pengiriman' => 'required|in_list[draft,dikirim,review,perlu_revisi,disetujui,final]',
+        'status_pengiriman' => 'required|in_list[draft,dikirim,review,perlu_revisi,disetujui,ditolak]',
         'progress_persen' => 'permit_empty|decimal|greater_than_equal_to[0]|less_than_equal_to[100]',
     ];
     protected $validationMessages   = [

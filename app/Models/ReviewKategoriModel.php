@@ -31,7 +31,8 @@ class ReviewKategoriModel extends Model
         'pengiriman_id' => 'int',
         'indikator_id' => 'int',
         'reviewer_id' => '?int',    // Nullable int
-        'data_input' => 'json'      // JSON field untuk data input
+        // Remove JSON casting to avoid DataCaster conflicts
+        // 'data_input' will be handled manually with safe_json_decode()
     ];
     protected array $castHandlers = [];
 
@@ -48,6 +49,7 @@ class ReviewKategoriModel extends Model
         'indikator_id' => 'required|integer',
         'status_review' => 'required|in_list[pending,disetujui,perlu_revisi]',
         'skor_review' => 'permit_empty|decimal|greater_than_equal_to[0]',
+        'data_input' => 'permit_empty|valid_json',
     ];
     protected $validationMessages   = [
         'pengiriman_id' => [
@@ -61,6 +63,9 @@ class ReviewKategoriModel extends Model
         'status_review' => [
             'required' => 'Status review harus diisi',
             'in_list' => 'Status review tidak valid'
+        ],
+        'data_input' => [
+            'valid_json' => 'Data input harus berupa JSON yang valid'
         ]
     ];
     protected $skipValidation       = false;
@@ -97,7 +102,7 @@ class ReviewKategoriModel extends Model
     {
         return $this->select('review_kategori.*, 
                              indikator.nama_kategori, indikator.kode_kategori, 
-                             indikator.bobot, indikator.warna, indikator.urutan,
+                             indikator.bobot_persen as bobot, indikator.urutan,
                              users.nama_lengkap as reviewer_name')
             ->join('indikator', 'indikator.id = review_kategori.indikator_id')
             ->join('users', 'users.id = review_kategori.reviewer_id', 'left')
@@ -131,6 +136,19 @@ class ReviewKategoriModel extends Model
             } else {
                 $reviewData['skor_review'] = null;
             }
+        }
+
+        // Handle data_input dengan benar
+        if (isset($data['data_input'])) {
+            if (is_string($data['data_input']) && !empty($data['data_input'])) {
+                $reviewData['data_input'] = $data['data_input'];
+            } elseif (is_array($data['data_input'])) {
+                $reviewData['data_input'] = json_encode($data['data_input']);
+            } else {
+                $reviewData['data_input'] = '{}'; // Empty JSON object
+            }
+        } else {
+            $reviewData['data_input'] = '{}'; // Default empty JSON object
         }
 
         if ($existing) {

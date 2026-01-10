@@ -17,6 +17,9 @@ class UserModel extends Model
         'email',
         'password',
         'nama_lengkap',
+        'full_name',
+        'unit_prodi',
+        'gedung',
         'role',
         'unit_id',
         'status_aktif',
@@ -40,27 +43,10 @@ class UserModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'username' => 'required|min_length[3]|max_length[100]|is_unique[users.username,id,{id}]',
-        'email' => 'required|valid_email|is_unique[users.email,id,{id}]',
-        'password' => 'required|min_length[8]',
-        'nama_lengkap' => 'required|max_length[255]',
-        'role' => 'required|in_list[admin_pusat,admin_unit,super_admin]',
+        // Removed validation rules to avoid conflicts with controller validation
     ];
     protected $validationMessages   = [
-        'username' => [
-            'required' => 'Username harus diisi',
-            'min_length' => 'Username minimal 3 karakter',
-            'is_unique' => 'Username sudah digunakan'
-        ],
-        'email' => [
-            'required' => 'Email harus diisi',
-            'valid_email' => 'Format email tidak valid',
-            'is_unique' => 'Email sudah digunakan'
-        ],
-        'password' => [
-            'required' => 'Password harus diisi',
-            'min_length' => 'Password minimal 8 karakter'
-        ]
+        // Removed validation messages to avoid conflicts
     ];
     protected $skipValidation       = false;
     protected $cleanValidationRules = true;
@@ -121,10 +107,66 @@ class UserModel extends Model
     }
 
     /**
-     * Verify password (plain text comparison)
+     * Get user for login with explicit role selection
+     */
+    public function getUserForLogin(string $login)
+    {
+        // Debug logging
+        log_message('debug', "getUserForLogin called with: " . $login);
+        
+        // Explicit select untuk memastikan role terbaca
+        // Fixed: Gunakan groupStart/groupEnd untuk OR condition yang benar
+        $result = $this->select('id, username, email, password, nama_lengkap, role, unit_id, status_aktif, last_login')
+            ->groupStart()
+                ->where('email', $login)
+                ->orWhere('username', $login)
+            ->groupEnd()
+            ->where('status_aktif', 1)
+            ->first();
+            
+        // Debug logging
+        if ($result) {
+            log_message('debug', "User found - ID: " . $result['id'] . ", Username: " . $result['username'] . ", Role: " . $result['role']);
+        } else {
+            log_message('debug', "No user found for login: " . $login);
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Verify password (supports both hashed and plain text)
      */
     public function verifyPassword(string $password, string $storedPassword): bool
     {
-        return $password === $storedPassword;
+        // Log for debugging
+        log_message('debug', "Password verification - Input length: " . strlen($password) . ", Stored length: " . strlen($storedPassword));
+        
+        // Check if stored password is hashed (bcrypt starts with $2y$ or $2a$)
+        if (strlen($storedPassword) >= 60 && (strpos($storedPassword, '$2y$') === 0 || strpos($storedPassword, '$2a$') === 0)) {
+            // Use password_verify for hashed passwords
+            $result = password_verify($password, $storedPassword);
+            log_message('debug', "Bcrypt verification result: " . ($result ? 'true' : 'false'));
+            return $result;
+        }
+        
+        // Check if stored password is MD5 hash (32 characters, hexadecimal)
+        if (strlen($storedPassword) === 32 && ctype_xdigit($storedPassword)) {
+            $result = md5($password) === $storedPassword;
+            log_message('debug', "MD5 verification result: " . ($result ? 'true' : 'false'));
+            return $result;
+        }
+        
+        // Check if stored password is SHA1 hash (40 characters, hexadecimal)
+        if (strlen($storedPassword) === 40 && ctype_xdigit($storedPassword)) {
+            $result = sha1($password) === $storedPassword;
+            log_message('debug', "SHA1 verification result: " . ($result ? 'true' : 'false'));
+            return $result;
+        }
+        
+        // Fallback to plain text comparison
+        $result = $password === $storedPassword;
+        log_message('debug', "Plain text verification result: " . ($result ? 'true' : 'false'));
+        return $result;
     }
 }

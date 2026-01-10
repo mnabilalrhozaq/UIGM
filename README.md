@@ -1,68 +1,127 @@
-# CodeIgniter 4 Application Starter
+# Waste Management System
 
-## What is CodeIgniter?
+Sistem manajemen sampah berbasis web menggunakan CodeIgniter 4 dengan fitur multi-role dan security enhancement.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## 🚀 Quick Start
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+### Requirements
+- PHP 8.0+
+- MySQL 5.7+
+- Composer
+- Apache/Nginx
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+### Installation
+```bash
+# Clone repository
+git clone [repository-url]
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+# Install dependencies
+composer install
 
-## Installation & updates
+# Setup environment
+cp .env.example .env
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+# Configure database di .env
+database.default.hostname = localhost
+database.default.database = eksperimen
+database.default.username = root
+database.default.password = 
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+# Import database
+mysql -u root eksperimen < database/quick_import.sql
 
-## Setup
+# Set permissions
+chmod -R 777 writable/
+```
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+### Access
+- **URL**: `http://localhost/eksperimen`
+- **Admin Pusat**: admin / admin123
+- **User**: userjti / user123
+- **Pengelola TPS**: pengelolatps / password123
 
-## Important Change with index.php
+## 🛡️ Security Features
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+Sistem dilengkapi dengan enterprise-grade security:
+- ✅ Enhanced Session Security (timeout, regeneration, hijacking detection)
+- ✅ Input Validation & Sanitization (XSS, SQL injection protection)
+- ✅ Rate Limiting (login, API, brute force prevention)
+- ✅ Enhanced Authentication & Access Control
+- ✅ Security Headers Protection
+- ✅ Comprehensive Security Logging
+- ✅ Full IPv6 Support
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+Detail: [README_SECURITY_IMPLEMENTATION.md](README_SECURITY_IMPLEMENTATION.md)
 
-**Please** read the user guide for a better explanation of how CI4 works!
+## 📁 Structure
 
-## Repository Management
+```
+app/
+├── Controllers/        # Application controllers
+│   ├── AdminPusat/    # Admin central controllers
+│   ├── User/          # User controllers
+│   └── Auth.php       # Authentication
+├── Models/            # Database models
+├── Views/             # View templates
+├── Filters/           # Security filters
+├── Libraries/         # Custom libraries
+└── Config/            # Configuration files
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+database/              # Database files
+public/               # Public assets
+writable/             # Logs & cache
+```
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+## 🔑 User Roles
 
-## Server Requirements
+1. **Admin Pusat**: Manajemen sistem, harga, review data
+2. **User**: Input data sampah per unit
+3. **Pengelola TPS**: Manajemen data TPS
+4. **Super Admin**: Full system access
 
-PHP version 8.1 or higher is required, with the following extensions installed:
+## 📊 Features
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+- Multi-role authentication & authorization
+- Dashboard dinamis per role
+- Waste management (CRUD)
+- Price management
+- Data review & approval
+- Feature toggle system
+- Security event logging
+- Export data (Excel, PDF)
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - If you are still using PHP 7.4 or 8.0, you should upgrade immediately.
-> - The end of life date for PHP 8.1 will be December 31, 2025.
+## 🔧 Development
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+```bash
+# Run development server
+php spark serve
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+# Clear cache
+php spark cache:clear
+
+# Run migrations
+php spark migrate
+
+# Run tests
+./vendor/bin/phpunit
+```
+
+## 📝 Documentation
+
+- [Security Implementation](README_SECURITY_IMPLEMENTATION.md)
+- [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
+
+## 📄 License
+
+[LICENSE](LICENSE)
+
+## 🤝 Contributing
+
+Lihat [CONTRIBUTING.md](CONTRIBUTING.md) untuk panduan kontribusi.
+
+---
+
+**Version**: 2.0.0  
+**Last Updated**: January 2026  
+**Status**: Production Ready ✅

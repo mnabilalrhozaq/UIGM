@@ -550,10 +550,14 @@ $stats = $stats ?? [];
                     
                     // Populate form
                     document.getElementById('edit_waste_id').value = waste.id;
-                    document.getElementById('edit_kategori_id').value = waste.kategori_id;
-                    document.getElementById('edit_kategori_id_display').value = waste.kategori_id;
+                    document.getElementById('edit_kategori_id').value = waste.kategori_id || waste.jenis_sampah;
+                    document.getElementById('edit_kategori_id_display').value = waste.kategori_id || waste.jenis_sampah;
                     document.getElementById('edit_berat').value = waste.berat;
                     document.getElementById('edit_unit_id').value = waste.unit_id || 'kg';
+                    
+                    // Disable kategori if status is draft or submitted
+                    const isLocked = ['draft', 'dikirim', 'disetujui'].includes(waste.status);
+                    document.getElementById('edit_kategori_id_display').disabled = true; // Always disabled
                     
                     // Calculate estimate
                     hitungEditEstimasi();

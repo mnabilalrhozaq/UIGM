@@ -85,9 +85,26 @@ class Waste extends BaseController
                 ]);
             }
             
-            // Check if user owns this data
+            // Check if user owns this data or has permission
             $user = session()->get('user');
-            if ($waste['user_id'] != $user['id']) {
+            $canEdit = false;
+            
+            // User can edit their own data
+            if (isset($waste['user_id']) && $waste['user_id'] == $user['id']) {
+                $canEdit = true;
+            }
+            
+            // User from same unit can edit
+            if (isset($waste['unit_id']) && isset($user['unit_id']) && $waste['unit_id'] == $user['unit_id']) {
+                $canEdit = true;
+            }
+            
+            // Admin can edit all
+            if (in_array($user['role'], ['admin_pusat', 'super_admin'])) {
+                $canEdit = true;
+            }
+            
+            if (!$canEdit) {
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Anda tidak memiliki akses ke data ini'

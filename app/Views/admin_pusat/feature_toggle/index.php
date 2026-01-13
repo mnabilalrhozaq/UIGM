@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?= csrf_hash() ?>">
+    <meta name="csrf-name" content="<?= csrf_token() ?>">
     <title><?= $title ?? 'Feature Toggle Management' ?></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -274,8 +276,18 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // Get CSRF token
+        function getCsrfToken() {
+            return {
+                name: document.querySelector('meta[name="csrf-name"]').getAttribute('content'),
+                hash: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            };
+        }
+
         // Toggle individual feature
         function toggleFeature(featureKey) {
+            console.log('Toggle feature:', featureKey);
+            
             Swal.fire({
                 title: 'Toggle Feature',
                 input: 'text',
@@ -284,55 +296,87 @@
                 confirmButtonText: 'Toggle',
                 showLoaderOnConfirm: true,
                 preConfirm: (reason) => {
+                    const csrf = getCsrfToken();
+                    const formData = new FormData();
+                    formData.append('feature_key', featureKey);
+                    formData.append('reason', reason || '');
+                    formData.append(csrf.name, csrf.hash);
+
+                    console.log('Sending toggle request:', {
+                        feature_key: featureKey,
+                        reason: reason,
+                        csrf: csrf.name
+                    });
+
                     return fetch('<?= base_url('/admin-pusat/feature-toggle/toggle') ?>', {
                         method: 'POST',
+                        body: formData,
                         headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `feature_key=${featureKey}&reason=${reason || ''}`
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('Response data:', data);
                         if (!data.success) {
                             throw new Error(data.message);
                         }
                         return data;
                     })
                     .catch(error => {
+                        console.error('Toggle error:', error);
                         Swal.showValidationMessage(`Request failed: ${error}`);
                     });
                 },
                 allowOutsideClick: () => !Swal.isLoading()
             }).then((result) => {
+                console.log('Swal result:', result);
                 if (result.isConfirmed) {
-                    Swal.fire('Success!', result.value.message, 'success');
-                    // Update toggle state
-                    document.getElementById(`toggle_${featureKey}`).checked = result.value.is_enabled;
+                    Swal.fire('Success!', result.value.message, 'success').then(() => {
+                        location.reload(); // Reload to update UI
+                    });
                 }
             });
         }
 
         // Show feature configuration
         function showConfig(featureKey) {
-            fetch(`<?= base_url('/admin-pusat/feature-toggle/get-feature') ?>/${featureKey}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('config_feature_key').value = featureKey;
-                        document.getElementById('config_data').value = JSON.stringify(data.feature.config, null, 2);
-                        new bootstrap.Modal(document.getElementById('configModal')).show();
-                    }
-                });
+            fetch(`<?= base_url('/admin-pusat/feature-toggle/get-feature') ?>/${featureKey}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('config_feature_key').value = featureKey;
+                    document.getElementById('config_data').value = JSON.stringify(data.data.config, null, 2);
+                    new bootstrap.Modal(document.getElementById('configModal')).show();
+                } else {
+                    Swal.fire('Error!', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                Swal.fire('Error!', 'Failed to load configuration', 'error');
+            });
         }
 
         // Save feature configuration
         function saveConfig() {
             const form = document.getElementById('configForm');
             const formData = new FormData(form);
+            const csrf = getCsrfToken();
+            formData.append(csrf.name, csrf.hash);
 
             fetch('<?= base_url('/admin-pusat/feature-toggle/update-config') ?>', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             })
             .then(response => response.json())
             .then(data => {
@@ -342,6 +386,9 @@
                 } else {
                     Swal.fire('Error!', data.message, 'error');
                 }
+            })
+            .catch(error => {
+                Swal.fire('Error!', 'Failed to save configuration', 'error');
             });
         }
 
@@ -355,12 +402,19 @@
                 confirmButtonText: enabled ? 'Enable All' : 'Disable All',
                 showLoaderOnConfirm: true,
                 preConfirm: (reason) => {
+                    const csrf = getCsrfToken();
+                    const formData = new FormData();
+                    formData.append('action', enabled ? 'enable_all' : 'disable_all');
+                    formData.append('category', category);
+                    formData.append('reason', reason || '');
+                    formData.append(csrf.name, csrf.hash);
+
                     return fetch('<?= base_url('/admin-pusat/feature-toggle/bulk-toggle') ?>', {
                         method: 'POST',
+                        body: formData,
                         headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `category=${category}&enabled=${enabled ? '1' : '0'}&reason=${reason || ''}`
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
                     })
                     .then(response => response.json())
                     .then(data => {

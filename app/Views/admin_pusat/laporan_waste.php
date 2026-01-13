@@ -61,13 +61,13 @@
                 </div>
             </div>
             
-            <div class="stat-card info">
+            <div class="stat-card danger">
                 <div class="stat-icon">
-                    <i class="fas fa-calendar"></i>
+                    <i class="fas fa-exclamation-triangle"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?= $filters['tahun'] ?></h3>
-                    <p>Tahun Laporan</p>
+                    <h3><?= $summary['total_perlu_revisi'] ?? 0 ?></h3>
+                    <p>Perlu Revisi</p>
                 </div>
             </div>
         </div>
@@ -297,6 +297,7 @@ body {
 .stat-card.primary { border-left-color: #007bff; }
 .stat-card.warning { border-left-color: #ffc107; }
 .stat-card.info { border-left-color: #17a2b8; }
+.stat-card.danger { border-left-color: #dc3545; }
 
 .stat-icon {
     width: 60px;
@@ -313,6 +314,7 @@ body {
 .stat-card.primary .stat-icon { background: #007bff; }
 .stat-card.warning .stat-icon { background: #ffc107; }
 .stat-card.info .stat-icon { background: #17a2b8; }
+.stat-card.danger .stat-icon { background: #dc3545; }
 
 .stat-content h3 {
     font-size: 28px;

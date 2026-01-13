@@ -61,6 +61,29 @@ class LaporanWaste extends BaseController
             
             $approvedWaste = $builder->orderBy('waste.tanggal', 'DESC')->findAll();
             
+            // Get rejected/need revision waste data
+            $builderRevisi = $wasteModel
+                ->select('waste.*, unit.nama_unit, users.nama_lengkap as user_name')
+                ->join('unit', 'unit.id = waste.unit_id', 'left')
+                ->join('users', 'users.id = waste.user_id', 'left')
+                ->where('waste.status', 'perlu_revisi');
+            
+            // Apply same filters for revision data
+            if (!empty($filters['unit_id'])) {
+                $builderRevisi->where('waste.unit_id', $filters['unit_id']);
+            }
+            
+            if (!empty($filters['jenis_sampah'])) {
+                $builderRevisi->where('waste.jenis_sampah', $filters['jenis_sampah']);
+            }
+            
+            if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+                $builderRevisi->where('waste.tanggal >=', $filters['start_date']);
+                $builderRevisi->where('waste.tanggal <=', $filters['end_date']);
+            }
+            
+            $revisiWaste = $builderRevisi->orderBy('waste.tanggal', 'DESC')->findAll();
+            
             // Calculate summary statistics
             $totalBerat = 0;
             $totalNilai = 0;
@@ -150,9 +173,11 @@ class LaporanWaste extends BaseController
                 'title' => 'Laporan Waste Management',
                 'approvedWaste' => $approvedWaste,
                 'wasteData' => $approvedWaste, // Alias
+                'revisiWaste' => $revisiWaste,
                 'summary' => [
                     'total_data' => count($approvedWaste),
                     'total_disetujui' => count($approvedWaste),
+                    'total_perlu_revisi' => count($revisiWaste),
                     'total_berat' => $totalBerat,
                     'total_nilai' => $totalNilai,
                     'total_unit' => count($unitSet)
@@ -185,9 +210,11 @@ class LaporanWaste extends BaseController
                 'title' => 'Laporan Waste Management',
                 'approvedWaste' => [],
                 'wasteData' => [],
+                'revisiWaste' => [],
                 'summary' => [
                     'total_data' => 0,
                     'total_disetujui' => 0,
+                    'total_perlu_revisi' => 0,
                     'total_berat' => 0,
                     'total_nilai' => 0,
                     'total_unit' => 0

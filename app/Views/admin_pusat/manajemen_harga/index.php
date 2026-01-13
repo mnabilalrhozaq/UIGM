@@ -20,9 +20,7 @@
             </div>
             
             <div class="header-actions">
-                <a href="<?= base_url('/admin-pusat/manajemen-harga/create') ?>" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Tambah Harga Baru
-                </a>
+                <!-- Tombol Tambah Harga dihapus - jenis sampah tetap -->
                 <a href="<?= base_url('/admin-pusat/manajemen-harga/logs') ?>" class="btn btn-outline-info">
                     <i class="fas fa-history"></i> Log Perubahan
                 </a>
@@ -100,9 +98,7 @@
                 <div class="empty-state">
                     <i class="fas fa-money-bill-wave"></i>
                     <p>Belum ada data harga sampah</p>
-                    <a href="<?= base_url('/admin-pusat/manajemen-harga/create') ?>" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Tambah Harga Pertama
-                    </a>
+                    <p class="text-muted">Hubungi administrator sistem untuk menambahkan jenis sampah</p>
                 </div>
                 <?php else: ?>
                 <div class="table-responsive">

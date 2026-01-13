@@ -572,13 +572,24 @@
             }
         }
 
-        // Role change handler
+        // Role change handler - Hide unit for admin_pusat
         document.getElementById('add_role').addEventListener('change', function() {
             const unitField = document.getElementById('add_unit_id');
-            if (this.value === 'user' || this.value === 'pengelola_tps') {
+            const unitContainer = unitField.parentElement.parentElement; // Get col-md-6 parent
+            
+            if (this.value === 'admin_pusat' || this.value === 'super_admin') {
+                // Hide unit field for admin
+                unitContainer.style.display = 'none';
+                unitField.required = false;
+                unitField.value = ''; // Clear selection
+            } else if (this.value === 'user' || this.value === 'pengelola_tps') {
+                // Show and require unit for user/tps
+                unitContainer.style.display = 'block';
                 unitField.required = true;
                 unitField.parentElement.querySelector('label').innerHTML = 'Unit *';
             } else {
+                // Show but not required for other roles
+                unitContainer.style.display = 'block';
                 unitField.required = false;
                 unitField.parentElement.querySelector('label').innerHTML = 'Unit';
             }
@@ -586,10 +597,21 @@
 
         document.getElementById('edit_role').addEventListener('change', function() {
             const unitField = document.getElementById('edit_unit_id');
-            if (this.value === 'user' || this.value === 'pengelola_tps') {
+            const unitContainer = unitField.parentElement.parentElement; // Get col-md-6 parent
+            
+            if (this.value === 'admin_pusat' || this.value === 'super_admin') {
+                // Hide unit field for admin
+                unitContainer.style.display = 'none';
+                unitField.required = false;
+                unitField.value = ''; // Clear selection
+            } else if (this.value === 'user' || this.value === 'pengelola_tps') {
+                // Show and require unit for user/tps
+                unitContainer.style.display = 'block';
                 unitField.required = true;
                 unitField.parentElement.querySelector('label').innerHTML = 'Unit *';
             } else {
+                // Show but not required for other roles
+                unitContainer.style.display = 'block';
                 unitField.required = false;
                 unitField.parentElement.querySelector('label').innerHTML = 'Unit';
             }

@@ -289,7 +289,7 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="edit_kategori_id" class="form-label">Kategori Sampah *</label>
-                            <select class="form-select" id="edit_kategori_id" name="kategori_id" required>
+                            <select class="form-select bg-light" id="edit_kategori_id_display" disabled style="cursor: not-allowed; opacity: 0.6;">
                                 <option value="">Pilih Kategori</option>
                                 <?php foreach ($categories as $category): ?>
                                 <option value="<?= $category['id'] ?>" 
@@ -301,6 +301,8 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                                 </option>
                                 <?php endforeach; ?>
                             </select>
+                            <input type="hidden" id="edit_kategori_id" name="kategori_id">
+                            <small class="text-muted"><i class="fas fa-lock"></i> Kategori sampah tidak dapat diubah saat edit</small>
                         </div>
                         <div class="mb-3">
                             <label for="edit_berat_kg" class="form-label">Berat (kg)</label>

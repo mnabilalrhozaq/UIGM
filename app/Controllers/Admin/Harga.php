@@ -196,6 +196,32 @@ class Harga extends BaseController
             
             // Update
             if ($hargaModel->update($id, $data)) {
+                // Save log if price changed
+                $oldPrice = $currentData['harga_per_satuan'];
+                $newPrice = $data['harga_per_satuan'];
+                
+                if ($oldPrice != $newPrice) {
+                    try {
+                        $logModel = new \App\Models\HargaLogModel();
+                        $session = session();
+                        $user = $session->get('user');
+                        
+                        // Use model's logPriceChange method
+                        $logModel->logPriceChange(
+                            $id,
+                            $data['jenis_sampah'],
+                            $oldPrice,
+                            $newPrice,
+                            $user['id'] ?? 0,
+                            'Update harga dari Rp ' . number_format($oldPrice, 0, ',', '.') . ' ke Rp ' . number_format($newPrice, 0, ',', '.')
+                        );
+                        
+                        log_message('info', "Price change logged: {$data['jenis_sampah']} from {$oldPrice} to {$newPrice}");
+                    } catch (\Exception $logError) {
+                        log_message('error', 'Failed to save price change log: ' . $logError->getMessage());
+                    }
+                }
+                
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'Harga berhasil diupdate'
@@ -266,13 +292,37 @@ class Harga extends BaseController
                 return redirect()->to('/auth/login');
             }
 
-            // Get logs from database directly
+            // Get logs from database
             $logModel = new \App\Models\HargaLogModel();
-            $logs = $logModel->getRecentChanges(50);
+            $logs = $logModel->getRecentChanges(100); // Get more logs
+            
+            // Calculate statistics
+            $today = date('Y-m-d');
+            $weekStart = date('Y-m-d', strtotime('-7 days'));
+            
+            $todayLogs = 0;
+            $weekLogs = 0;
+            
+            foreach ($logs as $log) {
+                $logDate = date('Y-m-d', strtotime($log['created_at']));
+                
+                if ($logDate === $today) {
+                    $todayLogs++;
+                }
+                
+                if ($logDate >= $weekStart) {
+                    $weekLogs++;
+                }
+            }
             
             $viewData = [
                 'title' => 'Log Perubahan Harga',
-                'logs' => $logs
+                'logs' => $logs,
+                'stats' => [
+                    'total_logs' => count($logs),
+                    'today_logs' => $todayLogs,
+                    'week_logs' => $weekLogs
+                ]
             ];
 
             return view('admin_pusat/manajemen_harga/logs', $viewData);
@@ -283,6 +333,11 @@ class Harga extends BaseController
             return view('admin_pusat/manajemen_harga/logs', [
                 'title' => 'Log Perubahan Harga',
                 'logs' => [],
+                'stats' => [
+                    'total_logs' => 0,
+                    'today_logs' => 0,
+                    'week_logs' => 0
+                ],
                 'error' => 'Terjadi kesalahan saat memuat log'
             ]);
         }

@@ -20,16 +20,8 @@ if (!function_exists('displayStat')) {
     }
 }
 
-// Simple feature check (fallback if helper not available)
-if (!function_exists('isFeatureEnabled')) {
-    function isFeatureEnabled($feature, $role = null) {
-        return true; // Default to enabled for now
-    }
-}
-
-// Feature toggle checks
-$showApproved = isFeatureEnabled('dashboard_statistics_cards', 'user');
-$showPending = isFeatureEnabled('dashboard_statistics_cards', 'user');
+// Load feature helper
+helper('feature');
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -78,7 +70,6 @@ $showPending = isFeatureEnabled('dashboard_statistics_cards', 'user');
         <!-- Statistics Cards - Feature Toggle: dashboard_statistics_cards -->
         <?php if (isFeatureEnabled('dashboard_statistics_cards', 'user')): ?>
         <div class="stats-grid">
-            <?php if ($showApproved): ?>
             <div class="stat-card">
                 <div class="stat-icon green">
                     <i class="fas fa-check-circle"></i>
@@ -88,7 +79,6 @@ $showPending = isFeatureEnabled('dashboard_statistics_cards', 'user');
                     <p>Data Disetujui</p>
                 </div>
             </div>
-            <?php endif; ?>
             
             <div class="stat-card">
                 <div class="stat-icon orange">
@@ -100,7 +90,6 @@ $showPending = isFeatureEnabled('dashboard_statistics_cards', 'user');
                 </div>
             </div>
             
-            <?php if ($showPending): ?>
             <div class="stat-card">
                 <div class="stat-icon blue">
                     <i class="fas fa-paper-plane"></i>
@@ -110,7 +99,6 @@ $showPending = isFeatureEnabled('dashboard_statistics_cards', 'user');
                     <p>Menunggu Review</p>
                 </div>
             </div>
-            <?php endif; ?>
             
             <div class="stat-card">
                 <div class="stat-icon purple">

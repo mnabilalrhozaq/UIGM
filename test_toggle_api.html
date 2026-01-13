@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Feature Toggle API</title>
+</head>
+<body>
+    <h1>Test Feature Toggle API</h1>
+    <button onclick="testToggle()">Test Toggle help_tooltips</button>
+    <pre id="result"></pre>
+
+    <script>
+        function testToggle() {
+            const formData = new FormData();
+            formData.append('feature_key', 'help_tooltips');
+            formData.append('reason', 'testing');
+
+            fetch('http://localhost:8080/admin-pusat/feature-toggle/toggle', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('Status:', response.status);
+                return response.text();
+            })
+            .then(text => {
+                document.getElementById('result').textContent = text;
+                console.log('Response:', text);
+            })
+            .catch(error => {
+                document.getElementById('result').textContent = 'Error: ' + error;
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>

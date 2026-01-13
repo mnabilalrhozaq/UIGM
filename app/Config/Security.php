@@ -89,7 +89,7 @@ class Security extends BaseConfig
      *
      * @var bool
      */
-    public bool $regenerate = true;
+    public bool $regenerate = false; // Changed to false to prevent token mismatch
 
     /**
      * --------------------------------------------------------------------------

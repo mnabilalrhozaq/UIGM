@@ -158,36 +158,73 @@ class UserManagement extends BaseController
 
         try {
             $password = $this->request->getPost('password');
+            $username = $this->request->getPost('username');
+            $email = $this->request->getPost('email');
+            $nama_lengkap = $this->request->getPost('nama_lengkap');
+            $role = $this->request->getPost('role');
+            $unit_id = $this->request->getPost('unit_id');
+            
+            // Validation
+            if (empty($username) || empty($email) || empty($password) || empty($nama_lengkap) || empty($role)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Semua field wajib diisi'
+                ]);
+            }
+            
+            // Check if username already exists
+            $existingUser = $this->userModel->where('username', $username)->first();
+            if ($existingUser) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Username sudah digunakan'
+                ]);
+            }
+            
+            // Check if email already exists
+            $existingEmail = $this->userModel->where('email', $email)->first();
+            if ($existingEmail) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Email sudah digunakan'
+                ]);
+            }
             
             $data = [
-                'username' => $this->request->getPost('username'),
-                'email' => $this->request->getPost('email'),
-                'password' => password_hash($password, PASSWORD_DEFAULT),
-                'nama_lengkap' => $this->request->getPost('nama_lengkap'),
-                'role' => $this->request->getPost('role'),
-                'unit_id' => $this->request->getPost('unit_id'),
+                'username' => $username,
+                'email' => $email,
+                'password' => $password, // Plain text password, no hash
+                'nama_lengkap' => $nama_lengkap,
+                'role' => $role,
+                'unit_id' => $unit_id ?: null,
                 'status_aktif' => 1
             ];
 
-            if ($this->userModel->insert($data)) {
-                // Store plain password in session temporarily for display
-                session()->setFlashdata('new_user_password', $password);
-                session()->setFlashdata('new_user_username', $data['username']);
+            $insertId = $this->userModel->insert($data);
+            
+            if ($insertId) {
+                log_message('info', 'User created successfully: ' . $username . ' (ID: ' . $insertId . ')');
                 
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'User berhasil ditambahkan',
-                    'password' => $password, // Send to frontend for immediate display
-                    'username' => $data['username']
+                    'password' => $password,
+                    'username' => $username
                 ]);
             }
+            
+            // If insert failed, get validation errors
+            $errors = $this->userModel->errors();
+            log_message('error', 'User insert failed: ' . json_encode($errors));
 
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Gagal menambahkan user'
+                'message' => 'Gagal menambahkan user: ' . implode(', ', $errors)
             ]);
 
         } catch (\Exception $e) {
+            log_message('error', 'User create exception: ' . $e->getMessage());
+            
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage()
@@ -215,7 +252,7 @@ class UserManagement extends BaseController
             // Update password only if provided
             $password = $this->request->getPost('password');
             if (!empty($password)) {
-                $data['password'] = password_hash($password, PASSWORD_DEFAULT);
+                $data['password'] = $password; // Plain text password, no hash
                 $passwordInfo = " Password baru: $password (Catat password ini!)";
             }
 
@@ -296,7 +333,7 @@ class UserManagement extends BaseController
             // Reset password to default: password123
             $defaultPassword = 'password123';
             $data = [
-                'password' => password_hash($defaultPassword, PASSWORD_DEFAULT)
+                'password' => $defaultPassword // Plain text password, no hash
             ];
 
             if ($this->userModel->update($id, $data)) {

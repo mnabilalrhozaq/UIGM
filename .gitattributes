@@ -1,0 +1,58 @@
+# =====================================
+# Global text normalization
+# =====================================
+* text=auto eol=lf
+
+# =====================================
+# PHP & Framework Files
+# =====================================
+*.php text eol=lf
+*.env text eol=lf
+*.htaccess text eol=lf
+
+# =====================================
+# Frontend Assets
+# =====================================
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.xml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# =====================================
+# Documentation
+# =====================================
+*.md text eol=lf
+*.txt text eol=lf
+
+# =====================================
+# Shell & Script Files
+# =====================================
+*.sh text eol=lf
+*.bat text eol=crlf
+
+# =====================================
+# Binary files (DO NOT TOUCH LINE ENDING)
+# =====================================
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.svg binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.rar binary
+*.exe binary
+
+# =====================================
+# Database Dumps
+# =====================================
+*.sql text eol=lf
+
+# =====================================
+# Ignore vendor-generated files
+# =====================================
+vendor/* linguist-generated

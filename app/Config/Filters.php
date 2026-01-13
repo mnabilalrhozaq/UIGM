@@ -110,8 +110,13 @@ class Filters extends BaseFilters
     public array $filters = [
         'csrf' => [
             'before' => [
-                'user/*',
-                'admin-pusat/*'
+                'user/*'
+                // CSRF disabled for admin-pusat during development
+                // 'admin-pusat/*'
+            ],
+            'except' => [
+                'admin-pusat/user-management/*',
+                'admin-pusat/feature-toggle/*'
             ]
         ]
     ];

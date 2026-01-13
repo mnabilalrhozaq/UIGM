@@ -338,8 +338,8 @@ $stats = $stats ?? [];
                     <input type="hidden" id="edit_waste_id" name="waste_id">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="edit_kategori_id" class="form-label">Kategori Sampah</label>
-                            <select class="form-select" id="edit_kategori_id_display" disabled>
+                            <label for="edit_kategori_id" class="form-label">Kategori Sampah *</label>
+                            <select class="form-select bg-light" id="edit_kategori_id_display" disabled style="cursor: not-allowed; opacity: 0.6;">
                                 <option value="">Pilih Kategori</option>
                                 <?php foreach ($categories as $category): ?>
                                 <option value="<?= $category['id'] ?>" data-harga="<?= $category['harga_per_satuan'] ?>">
@@ -348,7 +348,7 @@ $stats = $stats ?? [];
                                 <?php endforeach; ?>
                             </select>
                             <input type="hidden" id="edit_kategori_id" name="kategori_id">
-                            <small class="text-muted">Kategori sampah tidak dapat diubah saat edit</small>
+                            <small class="text-muted"><i class="fas fa-lock"></i> Kategori sampah tidak dapat diubah saat edit</small>
                         </div>
                         
                         <div class="row">

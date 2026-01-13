@@ -158,7 +158,7 @@ class Waste extends BaseController
         $user = $session->get('user');
         
         return $session->get('isLoggedIn') && 
-               isset($user['id'], $user['role'], $user['unit_id']) &&
+               isset($user['id'], $user['role']) &&
                in_array($user['role'], ['admin_pusat', 'super_admin']);
     }
 }

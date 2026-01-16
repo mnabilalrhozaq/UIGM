@@ -110,11 +110,6 @@ class WasteService
                 'created_at' => date('Y-m-d H:i:s')
             ];
 
-            // For TPS, add tps_id
-            if ($userType === 'tps') {
-                $wasteData['tps_id'] = $user['unit_id'];
-            }
-
             $result = $this->wasteModel->insert($wasteData);
             
             if ($result) {
@@ -149,9 +144,7 @@ class WasteService
             }
 
             // Verify ownership based on user type
-            if ($userType === 'tps' && $waste['tps_id'] != $user['unit_id']) {
-                return ['success' => false, 'message' => 'Data sampah bukan milik TPS Anda'];
-            } elseif ($userType === 'user' && $waste['unit_id'] != $user['unit_id']) {
+            if ($waste['unit_id'] != $user['unit_id']) {
                 return ['success' => false, 'message' => 'Data sampah bukan milik unit Anda'];
             }
 
@@ -192,9 +185,7 @@ class WasteService
             }
 
             // Verify ownership based on user type
-            if ($userType === 'tps' && $waste['tps_id'] != $user['unit_id']) {
-                return ['success' => false, 'message' => 'Data sampah bukan milik TPS Anda'];
-            } elseif ($userType === 'user' && $waste['unit_id'] != $user['unit_id']) {
+            if ($waste['unit_id'] != $user['unit_id']) {
                 return ['success' => false, 'message' => 'Data sampah bukan milik unit Anda'];
             }
 
@@ -275,8 +266,8 @@ class WasteService
     private function getUserWasteList(int $unitId): array
     {
         return $this->wasteModel
-            ->select('waste.*, harga_sampah.kategori, harga_sampah.harga_per_kg, users.nama_lengkap as created_by_name')
-            ->join('harga_sampah', 'harga_sampah.id = waste.kategori_id', 'left')
+            ->select('waste.*, master_harga_sampah.jenis_sampah as kategori, master_harga_sampah.harga_per_satuan as harga_per_kg, users.nama_lengkap as created_by_name')
+            ->join('master_harga_sampah', 'master_harga_sampah.id = waste.kategori_id', 'left')
             ->join('users', 'users.id = waste.created_by', 'left')
             ->where('waste.unit_id', $unitId)
             ->orderBy('waste.created_at', 'DESC')
@@ -286,10 +277,10 @@ class WasteService
     private function getTpsWasteList(int $tpsId): array
     {
         return $this->wasteModel
-            ->select('waste.*, harga_sampah.kategori, harga_sampah.harga_per_kg, users.nama_lengkap as created_by_name')
-            ->join('harga_sampah', 'harga_sampah.id = waste.kategori_id', 'left')
+            ->select('waste.*, master_harga_sampah.jenis_sampah as kategori, master_harga_sampah.harga_per_satuan as harga_per_kg, users.nama_lengkap as created_by_name')
+            ->join('master_harga_sampah', 'master_harga_sampah.id = waste.kategori_id', 'left')
             ->join('users', 'users.id = waste.created_by', 'left')
-            ->where('waste.tps_id', $tpsId)
+            ->where('waste.unit_id', $tpsId)
             ->orderBy('waste.created_at', 'DESC')
             ->findAll();
     }
@@ -342,18 +333,18 @@ class WasteService
 
         return [
             'total_waste_today' => $this->wasteModel
-                ->where('tps_id', $tpsId)
+                ->where('unit_id', $tpsId)
                 ->where('DATE(created_at)', $today)
                 ->countAllResults(),
             
             'total_waste_month' => $this->wasteModel
-                ->where('tps_id', $tpsId)
+                ->where('unit_id', $tpsId)
                 ->where('DATE_FORMAT(created_at, "%Y-%m")', $thisMonth)
                 ->countAllResults(),
             
             'total_weight_today' => $this->wasteModel
                 ->selectSum('berat_kg')
-                ->where('tps_id', $tpsId)
+                ->where('unit_id', $tpsId)
                 ->where('DATE(created_at)', $today)
                 ->get()
                 ->getRow()
@@ -361,7 +352,7 @@ class WasteService
             
             'total_weight_month' => $this->wasteModel
                 ->selectSum('berat_kg')
-                ->where('tps_id', $tpsId)
+                ->where('unit_id', $tpsId)
                 ->where('DATE_FORMAT(created_at, "%Y-%m")', $thisMonth)
                 ->get()
                 ->getRow()

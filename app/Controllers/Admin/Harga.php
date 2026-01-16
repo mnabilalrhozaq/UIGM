@@ -57,7 +57,7 @@ class Harga extends BaseController
             }
             
             $viewData = [
-                'title' => 'Manajemen Harga Sampah',
+                'title' => 'Manajemen Sampah',
                 'harga_list' => $hargaList,
                 'hargaSampah' => $hargaList, // Alias untuk view
                 'statistics' => [
@@ -86,7 +86,7 @@ class Harga extends BaseController
             log_message('error', 'Admin Harga Error: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
             
             return view('admin_pusat/manajemen_harga/index', [
-                'title' => 'Manajemen Harga Sampah',
+                'title' => 'Manajemen Sampah',
                 'harga_list' => [],
                 'hargaSampah' => [],
                 'statistics' => [
@@ -151,16 +151,121 @@ class Harga extends BaseController
                 return $this->response->setJSON(['success' => false, 'message' => 'Session invalid']);
             }
 
-            $result = $this->hargaService->createHarga($this->request->getPost());
+            // Validate input
+            $jenisSampah = $this->request->getPost('jenis_sampah');
+            $namaJenis = $this->request->getPost('nama_jenis');
+            $hargaPerSatuan = $this->request->getPost('harga_per_satuan');
+            $satuan = $this->request->getPost('satuan');
             
-            return $this->response->setJSON($result);
+            // Validasi field wajib
+            if (empty($jenisSampah) || empty($namaJenis) || empty($satuan)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Semua field wajib diisi',
+                    'errors' => [
+                        'jenis_sampah' => empty($jenisSampah) ? 'Kategori sampah harus diisi' : null,
+                        'nama_jenis' => empty($namaJenis) ? 'Jenis sampah (nama lengkap) harus diisi' : null,
+                        'satuan' => empty($satuan) ? 'Satuan harus dipilih' : null
+                    ]
+                ]);
+            }
+            
+            // Validasi harga jika dapat dijual
+            $dapatDijual = $this->request->getPost('dapat_dijual') ? 1 : 0;
+            if ($dapatDijual && (empty($hargaPerSatuan) || $hargaPerSatuan <= 0)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Harga per satuan harus diisi untuk sampah yang dapat dijual'
+                ]);
+            }
+            
+            // Check if nama_jenis already exists (untuk menghindari duplikasi)
+            $hargaModel = new \App\Models\HargaSampahModel();
+            $existing = $hargaModel->where('nama_jenis', $namaJenis)->first();
+            
+            if ($existing) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Nama jenis sampah "' . $namaJenis . '" sudah ada. Gunakan nama yang berbeda.'
+                ]);
+            }
+            
+            // Prepare data
+            $data = [
+                'jenis_sampah' => $jenisSampah,
+                'nama_jenis' => $namaJenis,
+                'harga_per_satuan' => $hargaPerSatuan ?? 0,
+                'satuan' => $satuan,
+                'dapat_dijual' => $this->request->getPost('dapat_dijual') ? 1 : 0,
+                'status_aktif' => $this->request->getPost('status_aktif') ? 1 : 0,
+                'deskripsi' => $this->request->getPost('deskripsi') ?? ''
+            ];
+            
+            // Log data yang akan diinsert
+            log_message('info', 'Attempting to insert jenis sampah: ' . json_encode($data));
+            
+            // Insert (timestamps akan otomatis ditambahkan oleh model)
+            $insertResult = $hargaModel->insert($data);
+            
+            // Log hasil insert
+            log_message('info', 'Insert result: ' . ($insertResult ? 'SUCCESS (ID: ' . $hargaModel->getInsertID() . ')' : 'FAILED'));
+            
+            if ($insertResult) {
+                $newId = $hargaModel->getInsertID();
+                log_message('info', 'New jenis sampah ID: ' . $newId);
+                
+                // Log the creation
+                try {
+                    $logModel = new \App\Models\HargaLogModel();
+                    $session = session();
+                    $user = $session->get('user');
+                    
+                    $logModel->logPriceChange(
+                        $newId,
+                        $jenisSampah,
+                        0,
+                        $hargaPerSatuan,
+                        $user['id'] ?? 0,
+                        'Jenis sampah baru ditambahkan: ' . $namaJenis
+                    );
+                } catch (\Exception $logError) {
+                    log_message('error', 'Failed to save creation log: ' . $logError->getMessage());
+                }
+                
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Jenis sampah berhasil ditambahkan',
+                    'data' => [
+                        'id' => $newId,
+                        'jenis_sampah' => $jenisSampah,
+                        'nama_jenis' => $namaJenis
+                    ]
+                ]);
+            }
+            
+            // Get validation errors if any
+            $errors = $hargaModel->errors();
+            $errorMessage = 'Gagal menambahkan jenis sampah';
+            
+            if (!empty($errors)) {
+                $errorMessage .= ': ' . implode(', ', $errors);
+                log_message('error', 'Validation errors: ' . json_encode($errors));
+            } else {
+                log_message('error', 'Insert failed but no validation errors. Check database constraints.');
+            }
+            
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $errorMessage,
+                'errors' => $errors
+            ]);
 
         } catch (\Exception $e) {
             log_message('error', 'Admin Harga Store Error: ' . $e->getMessage());
             
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menyimpan data'
+                'message' => 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage()
             ]);
         }
     }

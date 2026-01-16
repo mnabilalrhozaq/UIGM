@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= csrf_hash() ?>">
     <meta name="csrf-name" content="<?= csrf_token() ?>">
-    <title><?= $title ?? 'Manajemen Harga Sampah' ?></title>
+    <title><?= $title ?? 'Manajemen Sampah' ?></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -15,12 +15,14 @@
     <div class="main-content">
         <div class="page-header">
             <div class="header-content">
-                <h1><i class="fas fa-money-bill-wave"></i> Manajemen Harga Sampah</h1>
+                <h1><i class="fas fa-recycle"></i> Manajemen Sampah</h1>
                 <p>Kelola harga sampah secara terpusat untuk seluruh sistem</p>
             </div>
             
             <div class="header-actions">
-                <!-- Tombol Tambah Harga dihapus - jenis sampah tetap -->
+                <button type="button" class="btn btn-primary" onclick="showAddModal()">
+                    <i class="fas fa-plus"></i> Tambah Jenis Sampah
+                </button>
                 <a href="<?= base_url('/admin-pusat/manajemen-harga/logs') ?>" class="btn btn-outline-info">
                     <i class="fas fa-history"></i> Log Perubahan
                 </a>
@@ -96,17 +98,17 @@
             <div class="card-body">
                 <?php if (empty($hargaSampah)): ?>
                 <div class="empty-state">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <p>Belum ada data harga sampah</p>
-                    <p class="text-muted">Hubungi administrator sistem untuk menambahkan jenis sampah</p>
+                    <i class="fas fa-recycle"></i>
+                    <p>Belum ada data jenis sampah</p>
+                    <p class="text-muted">Klik tombol "Tambah Jenis Sampah" untuk menambahkan data baru</p>
                 </div>
                 <?php else: ?>
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th>Kategori Sampah</th>
                                 <th>Jenis Sampah</th>
-                                <th>Nama Lengkap</th>
                                 <th>Harga per Satuan</th>
                                 <th>Satuan</th>
                                 <th>Status Jual</th>
@@ -168,6 +170,11 @@
                                                 onclick="editHarga(<?= $item['id'] ?>)" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </button>
+                                        <button type="button" class="btn btn-sm btn-danger" 
+                                                onclick="deleteHarga(<?= $item['id'] ?>, '<?= esc($item['jenis_sampah']) ?>')" 
+                                                title="Hapus">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -218,65 +225,180 @@
         <?php endif; ?>
     </div>
 
+    <!-- Add Jenis Sampah Modal -->
+    <div class="modal fade" id="addJenisSampahModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Tambah Jenis Sampah Baru</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addJenisSampahForm">
+                    <div class="modal-body">
+                        <!-- Kategori Sampah (input text, bukan dropdown) -->
+                        <div class="mb-3">
+                            <label for="add_jenis_sampah" class="form-label">Kategori Sampah *</label>
+                            <input type="text" class="form-control" id="add_jenis_sampah" name="jenis_sampah" 
+                                   placeholder="Contoh: Plastik, Kertas, Logam, Organik, Residu" required>
+                            <small class="text-muted">Ketik kategori sampah (Plastik, Kertas, Logam, Organik, Residu, dll)</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="add_nama_jenis" class="form-label">Jenis Sampah (Nama Lengkap) *</label>
+                            <input type="text" class="form-control" id="add_nama_jenis" name="nama_jenis" 
+                                   placeholder="Contoh: Botol Plastik PET Bersih, Kardus Bekas, Kaleng Aluminium" required>
+                            <small class="text-muted">Nama lengkap atau deskripsi detail jenis sampah</small>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="add_dapat_dijual" 
+                                   name="dapat_dijual" value="1" checked>
+                            <label class="form-check-label" for="add_dapat_dijual">
+                                <i class="fas fa-money-bill-wave"></i> Dapat Dijual
+                            </label>
+                            <small class="d-block text-muted">Centang jika sampah ini memiliki nilai ekonomis</small>
+                        </div>
+                        
+                        <!-- Harga Section - akan disembunyikan jika tidak dapat dijual -->
+                        <div class="row">
+                            <div class="col-md-6" id="harga_section">
+                                <div class="mb-3">
+                                    <label for="add_harga_per_satuan" class="form-label">Harga per Satuan *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="number" class="form-control" id="add_harga_per_satuan" 
+                                               name="harga_per_satuan" placeholder="0" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="add_satuan" class="form-label">Satuan *</label>
+                                    <select class="form-select" id="add_satuan" name="satuan" required>
+                                        <option value="">Pilih Satuan</option>
+                                        <option value="kg">Kilogram (kg)</option>
+                                        <option value="gram">Gram (g)</option>
+                                        <option value="ton">Ton</option>
+                                        <option value="liter">Liter</option>
+                                        <option value="pcs">Pieces (pcs)</option>
+                                        <option value="karung">Karung</option>
+                                    </select>
+                                    <small class="text-muted">Satuan untuk menghitung berat/jumlah sampah</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="add_deskripsi" class="form-label">Deskripsi</label>
+                            <textarea class="form-control" id="add_deskripsi" name="deskripsi" rows="3" 
+                                      placeholder="Deskripsi singkat tentang jenis sampah ini"></textarea>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="add_status_aktif" 
+                                   name="status_aktif" value="1" checked>
+                            <label class="form-check-label" for="add_status_aktif">
+                                <i class="fas fa-check-circle"></i> Status Aktif
+                            </label>
+                            <small class="d-block text-muted">Centang untuk mengaktifkan jenis sampah ini</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times"></i> Batal
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Simpan Jenis Sampah
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Edit Harga Modal -->
     <div class="modal fade" id="editHargaModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Harga Sampah</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-warning text-white">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> Edit Jenis Sampah</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="editHargaForm">
                     <input type="hidden" id="edit_id" name="id">
                     <div class="modal-body">
+                        <!-- Kategori Sampah (input text, bukan dropdown) -->
                         <div class="mb-3">
-                            <label for="edit_jenis_sampah" class="form-label">Jenis Sampah *</label>
-                            <input type="text" class="form-control" id="edit_jenis_sampah" name="jenis_sampah" required>
+                            <label for="edit_jenis_sampah" class="form-label">Kategori Sampah *</label>
+                            <input type="text" class="form-control" id="edit_jenis_sampah" name="jenis_sampah" 
+                                   placeholder="Contoh: Plastik, Kertas, Logam, Organik, Residu" required>
+                            <small class="text-muted">Ketik kategori sampah (Plastik, Kertas, Logam, Organik, Residu, dll)</small>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="edit_nama_jenis" class="form-label">Nama Lengkap</label>
-                            <input type="text" class="form-control" id="edit_nama_jenis" name="nama_jenis">
+                            <label for="edit_nama_jenis" class="form-label">Jenis Sampah (Nama Lengkap) *</label>
+                            <input type="text" class="form-control" id="edit_nama_jenis" name="nama_jenis" 
+                                   placeholder="Contoh: Botol Plastik PET Bersih, Kardus Bekas, Kaleng Aluminium" required>
+                            <small class="text-muted">Nama lengkap atau deskripsi detail jenis sampah</small>
                         </div>
                         
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="edit_dapat_dijual" 
+                                   name="dapat_dijual" value="1" checked>
+                            <label class="form-check-label" for="edit_dapat_dijual">
+                                <i class="fas fa-money-bill-wave"></i> Dapat Dijual
+                            </label>
+                            <small class="d-block text-muted">Centang jika sampah ini memiliki nilai ekonomis</small>
+                        </div>
+                        
+                        <!-- Harga Section - akan disembunyikan jika tidak dapat dijual -->
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6" id="edit_harga_section">
                                 <div class="mb-3">
                                     <label for="edit_harga_per_satuan" class="form-label">Harga per Satuan *</label>
-                                    <input type="number" class="form-control" id="edit_harga_per_satuan" name="harga_per_satuan" required>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="number" class="form-control" id="edit_harga_per_satuan" 
+                                               name="harga_per_satuan" placeholder="0" min="0">
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="edit_satuan" class="form-label">Satuan *</label>
                                     <select class="form-select" id="edit_satuan" name="satuan" required>
+                                        <option value="">Pilih Satuan</option>
                                         <option value="kg">Kilogram (kg)</option>
+                                        <option value="gram">Gram (g)</option>
                                         <option value="ton">Ton</option>
                                         <option value="liter">Liter</option>
                                         <option value="pcs">Pieces (pcs)</option>
                                         <option value="karung">Karung</option>
                                     </select>
+                                    <small class="text-muted">Satuan untuk menghitung berat/jumlah sampah</small>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="mb-3">
                             <label for="edit_deskripsi" class="form-label">Deskripsi</label>
-                            <textarea class="form-control" id="edit_deskripsi" name="deskripsi" rows="3"></textarea>
+                            <textarea class="form-control" id="edit_deskripsi" name="deskripsi" rows="3" 
+                                      placeholder="Deskripsi singkat tentang jenis sampah ini"></textarea>
                         </div>
                         
                         <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="edit_dapat_dijual" name="dapat_dijual" value="1" checked>
-                            <label class="form-check-label" for="edit_dapat_dijual">Dapat Dijual</label>
-                        </div>
-                        
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="edit_status_aktif" name="status_aktif" value="1" checked>
-                            <label class="form-check-label" for="edit_status_aktif">Status Aktif</label>
+                            <input type="checkbox" class="form-check-input" id="edit_status_aktif" 
+                                   name="status_aktif" value="1" checked>
+                            <label class="form-check-label" for="edit_status_aktif">
+                                <i class="fas fa-check-circle"></i> Status Aktif
+                            </label>
+                            <small class="d-block text-muted">Centang untuk mengaktifkan jenis sampah ini</small>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times"></i> Batal
+                        </button>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Simpan Perubahan
                         </button>
@@ -288,6 +410,170 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Toggle harga section based on dapat_dijual checkbox
+        function toggleHargaSection() {
+            const dapatDijualCheckbox = document.getElementById('add_dapat_dijual');
+            const hargaSection = document.getElementById('harga_section');
+            const hargaInput = document.getElementById('add_harga_per_satuan');
+            
+            if (dapatDijualCheckbox.checked) {
+                hargaSection.style.display = 'block';
+                hargaInput.required = true;
+            } else {
+                hargaSection.style.display = 'none';
+                hargaInput.required = false;
+                hargaInput.value = '0';
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listener to checkbox (with null check)
+            const dapatDijualCheckbox = document.getElementById('add_dapat_dijual');
+            if (dapatDijualCheckbox) {
+                dapatDijualCheckbox.addEventListener('change', toggleHargaSection);
+                
+                // Set initial state
+                toggleHargaSection();
+            }
+        });
+        
+        // Show Add Modal
+        function showAddModal() {
+            // Reset form
+            document.getElementById('addJenisSampahForm').reset();
+            
+            // Set default values
+            document.getElementById('add_dapat_dijual').checked = true;
+            document.getElementById('add_status_aktif').checked = true;
+            
+            // Show/hide harga section
+            toggleHargaSection();
+            
+            const modal = new bootstrap.Modal(document.getElementById('addJenisSampahModal'));
+            modal.show();
+        }
+
+
+
+        // Handle add form submit
+        document.getElementById('addJenisSampahForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            // Validasi jenis_sampah
+            const jenisSampah = formData.get('jenis_sampah');
+            if (!jenisSampah) {
+                showAlert('error', 'Silakan isi kategori sampah');
+                return;
+            }
+            
+            // Validasi nama_jenis
+            const namaJenis = formData.get('nama_jenis');
+            if (!namaJenis) {
+                showAlert('error', 'Silakan isi jenis sampah (nama lengkap)');
+                return;
+            }
+            
+            // Validasi satuan (wajib untuk semua jenis sampah)
+            const satuan = formData.get('satuan');
+            if (!satuan) {
+                showAlert('error', 'Silakan pilih satuan');
+                return;
+            }
+            
+            // Jika tidak dapat dijual, set harga = 0
+            const dapatDijual = document.getElementById('add_dapat_dijual').checked;
+            if (!dapatDijual) {
+                formData.set('harga_per_satuan', '0');
+            } else {
+                // Validasi harga jika dapat dijual
+                const harga = formData.get('harga_per_satuan');
+                
+                if (!harga || harga <= 0) {
+                    showAlert('error', 'Silakan isi harga per satuan');
+                    return;
+                }
+            }
+            
+            // Add CSRF token
+            const csrfName = document.querySelector('meta[name="csrf-name"]')?.getAttribute('content');
+            const csrfHash = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (csrfName && csrfHash) {
+                formData.append(csrfName, csrfHash);
+            }
+            
+            // Debug: log form data
+            console.log('Submitting new jenis sampah:');
+            for (let pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
+            
+            fetch('<?= base_url('/admin-pusat/manajemen-harga/store') ?>', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('addJenisSampahModal')).hide();
+                    showAlert('success', data.message || 'Jenis sampah berhasil ditambahkan');
+                    // Redirect ke URL bersih tanpa parameter GET
+                    setTimeout(() => {
+                        window.location.href = '<?= base_url('/admin-pusat/manajemen-harga') ?>';
+                    }, 1500);
+                } else {
+                    // Show detailed error message
+                    let errorMsg = data.message || 'Gagal menambahkan jenis sampah';
+                    if (data.errors && Object.keys(data.errors).length > 0) {
+                        errorMsg += '<br><small>' + Object.values(data.errors).join('<br>') + '</small>';
+                    }
+                    showAlert('error', errorMsg);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', 'Terjadi kesalahan saat menyimpan data: ' + error.message);
+            });
+        });
+
+        // Delete Harga function
+        function deleteHarga(id, jenisSampah) {
+            if (confirm(`Apakah Anda yakin ingin menghapus jenis sampah "${jenisSampah}"?\n\nPerhatian: Data yang sudah digunakan di transaksi tidak akan terhapus.`)) {
+                fetch(`<?= base_url('/admin-pusat/manajemen-harga/delete/') ?>${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('success', data.message);
+                        setTimeout(() => { window.location.href = '<?= base_url('/admin-pusat/manajemen-harga') ?>'; }, 1500);
+                    } else {
+                        showAlert('error', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('error', 'Terjadi kesalahan saat menghapus data');
+                });
+            }
+        }
+
         // Edit Harga function
         function editHarga(id) {
             fetch(`<?= base_url('/admin-pusat/manajemen-harga/get/') ?>${id}`, {
@@ -309,6 +595,9 @@
                     document.getElementById('edit_status_aktif').checked = harga.status_aktif;
                     document.getElementById('edit_deskripsi').value = harga.deskripsi || '';
                     
+                    // Toggle harga section based on dapat_dijual
+                    toggleEditHargaSection();
+                    
                     // Show modal
                     const modal = new bootstrap.Modal(document.getElementById('editHargaModal'));
                     modal.show();
@@ -321,9 +610,37 @@
                 showAlert('error', 'Terjadi kesalahan saat mengambil data');
             });
         }
+        
+        // Toggle edit harga section based on dapat_dijual checkbox
+        function toggleEditHargaSection() {
+            const dapatDijualCheckbox = document.getElementById('edit_dapat_dijual');
+            const hargaSection = document.getElementById('edit_harga_section');
+            const hargaInput = document.getElementById('edit_harga_per_satuan');
+            
+            if (dapatDijualCheckbox && hargaSection && hargaInput) {
+                if (dapatDijualCheckbox.checked) {
+                    hargaSection.style.display = 'block';
+                    hargaInput.required = true;
+                } else {
+                    hargaSection.style.display = 'none';
+                    hargaInput.required = false;
+                    hargaInput.value = '0';
+                }
+            }
+        }
+        
+        // Add event listener to edit dapat_dijual checkbox
+        document.addEventListener('DOMContentLoaded', function() {
+            const editDapatDijualCheckbox = document.getElementById('edit_dapat_dijual');
+            if (editDapatDijualCheckbox) {
+                editDapatDijualCheckbox.addEventListener('change', toggleEditHargaSection);
+            }
+        });
 
         // Handle edit form submit
-        document.getElementById('editHargaForm').addEventListener('submit', function(e) {
+        const editFormElement = document.getElementById('editHargaForm');
+        if (editFormElement) {
+            editFormElement.addEventListener('submit', function(e) {
             e.preventDefault();
             
             const id = document.getElementById('edit_id').value;
@@ -358,7 +675,9 @@
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('editHargaModal')).hide();
                     showAlert('success', data.message);
-                    setTimeout(() => location.reload(), 1500);
+                    setTimeout(() => {
+                        window.location.href = '<?= base_url('/admin-pusat/manajemen-harga') ?>';
+                    }, 1500);
                 } else {
                     showAlert('error', data.message || 'Gagal menyimpan perubahan');
                 }
@@ -367,43 +686,10 @@
                 console.error('Error:', error);
                 showAlert('error', 'Terjadi kesalahan saat menyimpan data');
             });
-        });
-
-        // Handle status toggle
-        document.querySelectorAll('.status-toggle').forEach(toggle => {
-            toggle.addEventListener('change', function() {
-                const id = this.dataset.id;
-                const isChecked = this.checked;
-                
-                fetch(`<?= base_url('/admin-pusat/manajemen-harga/toggle-status/') ?>${id}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update label
-                        const label = this.nextElementSibling;
-                        label.textContent = isChecked ? 'Aktif' : 'Nonaktif';
-                        
-                        // Show success message
-                        showAlert('success', data.message);
-                    } else {
-                        // Revert toggle
-                        this.checked = !isChecked;
-                        showAlert('error', data.message);
-                    }
-                })
-                .catch(error => {
-                    // Revert toggle
-                    this.checked = !isChecked;
-                    showAlert('error', 'Terjadi kesalahan sistem');
-                });
             });
-        });
+        }
+
+
 
         // Show alert function
         function showAlert(type, message) {

@@ -77,15 +77,18 @@ class WasteService
                 $status = 'dikirim';
             }
             
+            // Get satuan from input, default to 'kg' if not provided
+            $satuan = $data['satuan'] ?? 'kg';
+            
             $wasteData = [
                 'unit_id' => $user['unit_id'],
                 'berat_kg' => $data['berat_kg'],
                 'tanggal' => date('Y-m-d'),
                 'jenis_sampah' => $category['jenis_sampah'],
-                'satuan' => 'kg',
+                'satuan' => $satuan,
                 'jumlah' => $data['berat_kg'],
                 'gedung' => 'User Unit',
-                'kategori_sampah' => $category['dapat_dijual'] ? 'bisa_dijual' : 'tidak_dijual',
+                'kategori_sampah' => $category['dapat_dijual'] ? 'bisa_dijual' : 'tidak_bisa_dijual',
                 'status' => $status
             ];
             
@@ -104,8 +107,12 @@ class WasteService
                 return ['success' => true, 'message' => $message];
             }
 
-            log_message('error', 'User Save Waste - Insert failed');
-            return ['success' => false, 'message' => 'Gagal menyimpan data sampah'];
+            // Get database error if insert failed
+            $db = \Config\Database::connect();
+            $error = $db->error();
+            log_message('error', 'User Save Waste - Insert failed. DB Error: ' . json_encode($error));
+            
+            return ['success' => false, 'message' => 'Gagal menyimpan data sampah: ' . ($error['message'] ?? 'Unknown error')];
 
         } catch (\Exception $e) {
             log_message('error', 'Save User Waste Error: ' . $e->getMessage());
@@ -117,19 +124,32 @@ class WasteService
     public function updateWaste(int $id, array $data): array
     {
         try {
-            log_message('info', 'User Update Waste - Data received: ' . json_encode($data));
+            log_message('info', 'User Update Waste - ID: ' . $id . ', Data received: ' . json_encode($data));
             
-            $validation = $this->validateWasteData($data);
-            if (!$validation['valid']) {
-                return ['success' => false, 'message' => $validation['message']];
+            // Validate required fields
+            if (empty($data['kategori_id'])) {
+                log_message('warning', 'User Update Waste - kategori_id is empty');
+                return ['success' => false, 'message' => 'Kategori sampah harus dipilih'];
+            }
+            
+            if (empty($data['berat_kg']) || $data['berat_kg'] <= 0) {
+                log_message('warning', 'User Update Waste - berat_kg is invalid: ' . ($data['berat_kg'] ?? 'null'));
+                return ['success' => false, 'message' => 'Jumlah/berat harus diisi dan lebih dari 0'];
             }
 
             $user = session()->get('user');
+            log_message('info', 'User Update Waste - User: ' . json_encode($user));
             
             // Check if waste belongs to this user's unit
             $waste = $this->wasteModel->find($id);
-            if (!$waste || $waste['unit_id'] != $user['unit_id']) {
-                return ['success' => false, 'message' => 'Data sampah tidak ditemukan atau bukan milik unit Anda'];
+            log_message('info', 'User Update Waste - Existing waste: ' . json_encode($waste));
+            
+            if (!$waste) {
+                return ['success' => false, 'message' => 'Data sampah tidak ditemukan'];
+            }
+            
+            if ($waste['unit_id'] != $user['unit_id']) {
+                return ['success' => false, 'message' => 'Data sampah bukan milik unit Anda'];
             }
 
             // Check if waste can be edited
@@ -139,6 +159,7 @@ class WasteService
 
             // Get category info
             $category = $this->hargaModel->find($data['kategori_id']);
+            log_message('info', 'User Update Waste - Category: ' . json_encode($category));
             
             if (!$category) {
                 return ['success' => false, 'message' => 'Kategori sampah tidak ditemukan'];
@@ -152,9 +173,10 @@ class WasteService
             
             $wasteData = [
                 'berat_kg' => $data['berat_kg'],
-                'jenis_sampah' => $category['jenis_sampah'],
                 'jumlah' => $data['berat_kg'],
-                'kategori_sampah' => $category['dapat_dijual'] ? 'bisa_dijual' : 'tidak_dijual',
+                'satuan' => $data['satuan'] ?? $waste['satuan'] ?? 'kg',
+                'jenis_sampah' => $category['jenis_sampah'],
+                'kategori_sampah' => $category['dapat_dijual'] ? 'bisa_dijual' : 'tidak_bisa_dijual',
                 'status' => $status
             ];
             
@@ -162,21 +184,26 @@ class WasteService
             if ($category['dapat_dijual']) {
                 $wasteData['nilai_rupiah'] = $data['berat_kg'] * $category['harga_per_satuan'];
             } else {
-                $wasteData['nilai_rupiah'] = null;
+                $wasteData['nilai_rupiah'] = 0;
             }
 
+            log_message('info', 'User Update Waste - Prepared data: ' . json_encode($wasteData));
+            
             $result = $this->wasteModel->update($id, $wasteData);
             
             if ($result) {
+                log_message('info', 'User Update Waste - Success');
                 $message = $status === 'dikirim' ? 'Data sampah berhasil diupdate dan dikirim' : 'Data sampah berhasil diupdate sebagai draft';
                 return ['success' => true, 'message' => $message];
             }
 
+            log_message('error', 'User Update Waste - Update failed');
             return ['success' => false, 'message' => 'Gagal mengupdate data sampah'];
 
         } catch (\Exception $e) {
             log_message('error', 'Update User Waste Error: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Terjadi kesalahan sistem'];
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            return ['success' => false, 'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()];
         }
     }
 

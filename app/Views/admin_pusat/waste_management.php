@@ -35,8 +35,8 @@ $summary = $summary ?? [];
     
     <div class="main-content">
         <div class="page-header">
-            <h1><i class="fas fa-clipboard-check"></i> Review Data Sampah</h1>
-            <p>Review dan setujui data sampah dari Unit dan TPS</p>
+            <h1><i class="fas fa-clipboard-check"></i> Waste Management</h1>
+            <p>Kelola dan monitor data sampah dari semua unit</p>
         </div>
 
         <!-- Flash Messages -->
@@ -52,52 +52,9 @@ $summary = $summary ?? [];
         <div class="alert alert-danger alert-dismissible fade show">
             <i class="fas fa-exclamation-circle"></i>
             <?= session()->getFlashdata('error') ?>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         <?php endif; ?>
-
-        <!-- Statistics Cards -->
-        <div class="stats-grid mb-4">
-            <div class="stat-card warning">
-                <div class="stat-icon">
-                    <i class="fas fa-paper-plane"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?= $summary['dikirim_count'] ?? 0 ?></h3>
-                    <p>Menunggu Review</p>
-                </div>
-            </div>
-            
-            <div class="stat-card success">
-                <div class="stat-icon">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?= $summary['disetujui_count'] ?? 0 ?></h3>
-                    <p>Disetujui</p>
-                </div>
-            </div>
-            
-            <div class="stat-card danger">
-                <div class="stat-icon">
-                    <i class="fas fa-edit"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?= $summary['perlu_revisi_count'] ?? 0 ?></h3>
-                    <p>Perlu Revisi</p>
-                </div>
-            </div>
-            
-            <div class="stat-card info">
-                <div class="stat-icon">
-                    <i class="fas fa-weight"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?= formatNumber($summary['weight_month'] ?? 0) ?> kg</h3>
-                    <p>Total Bulan Ini</p>
-                </div>
-            </div>
-        </div>
 
         <!-- Waste Data Table -->
         <div class="card">
@@ -151,18 +108,19 @@ $summary = $summary ?? [];
                                         <span class="badge bg-<?= $statusClass ?>"><?= $statusLabel ?></span>
                                     </td>
                                     <td>
-                                        <?php if (in_array($waste['status'], ['dikirim', 'review'])): ?>
                                         <div class="btn-group btn-group-sm">
+                                            <?php if (in_array($waste['status'], ['dikirim', 'review'])): ?>
                                             <button type="button" class="btn btn-success" onclick="approveWaste(<?= $waste['id'] ?>)">
                                                 <i class="fas fa-check"></i> Setujui
                                             </button>
                                             <button type="button" class="btn btn-danger" onclick="rejectWaste(<?= $waste['id'] ?>)">
                                                 <i class="fas fa-times"></i> Tolak
                                             </button>
+                                            <?php endif; ?>
+                                            <button type="button" class="btn btn-danger" onclick="deleteWaste(<?= $waste['id'] ?>, '<?= esc($waste['jenis_sampah']) ?>')">
+                                                <i class="fas fa-trash"></i> Hapus
+                                            </button>
                                         </div>
-                                        <?php else: ?>
-                                        <span class="text-muted">-</span>
-                                        <?php endif; ?>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -238,6 +196,31 @@ $summary = $summary ?? [];
             rejectModal.show();
         }
 
+        function deleteWaste(id, jenisSampah) {
+            if (confirm(`Apakah Anda yakin ingin menghapus data sampah "${jenisSampah}"?\n\nData yang dihapus tidak dapat dikembalikan.`)) {
+                const formData = new FormData();
+                formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+                
+                fetch(`<?= base_url('/admin-pusat/waste/delete/') ?>${id}`, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Terjadi kesalahan saat menghapus data');
+                });
+            }
+        }
+
         document.getElementById('rejectForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -301,72 +284,6 @@ body {
     color: #6c757d;
     font-size: 16px;
     margin: 0;
-}
-
-/* ===== STATISTICS CARDS ===== */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-}
-
-.stat-card {
-    background: white;
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    transition: all 0.3s ease;
-    border-left: 4px solid transparent;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.stat-card.primary { border-left-color: #007bff; }
-.stat-card.success { border-left-color: #28a745; }
-.stat-card.warning { border-left-color: #ffc107; }
-.stat-card.info { border-left-color: #17a2b8; }
-.stat-card.danger { border-left-color: #dc3545; }
-
-.stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    color: white;
-    flex-shrink: 0;
-}
-
-.stat-card.primary .stat-icon { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.stat-card.success .stat-icon { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-.stat-card.warning .stat-icon { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-.stat-card.info .stat-icon { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-.stat-card.danger .stat-icon { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); }
-
-.stat-content {
-    flex: 1;
-}
-
-.stat-content h3 {
-    font-size: 28px;
-    font-weight: 700;
-    margin: 0 0 5px 0;
-    color: #2c3e50;
-}
-
-.stat-content p {
-    margin: 0;
-    color: #6c757d;
-    font-weight: 500;
-    font-size: 14px;
 }
 
 /* ===== CARDS ===== */
@@ -521,11 +438,6 @@ body {
         margin-left: 0;
         padding: 20px;
         max-width: 100vw;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
     }
     
     .page-header h1 {

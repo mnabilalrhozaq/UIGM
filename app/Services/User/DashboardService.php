@@ -131,9 +131,7 @@ class DashboardService
             $maxItems = 5; // Default limit
             
             $recentWaste = $this->wasteModel
-                ->select('waste_management.*, harga_sampah.kategori')
-                ->join('harga_sampah', 'harga_sampah.id = waste_management.kategori_id', 'left')
-                ->where('waste_management.created_by', $userId)
+                ->where('waste_management.unit_id', $user['unit_id'])
                 ->orderBy('waste_management.updated_at', 'DESC')
                 ->limit($maxItems)
                 ->findAll();

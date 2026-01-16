@@ -69,15 +69,18 @@ class WasteService
                 $status = 'dikirim';
             }
             
+            // Get satuan from input, default to 'kg' if not provided
+            $satuan = $data['satuan'] ?? 'kg';
+            
             $wasteData = [
                 'unit_id' => $user['unit_id'],
                 'berat_kg' => $data['berat_kg'],
                 'tanggal' => date('Y-m-d'),
                 'jenis_sampah' => $category['jenis_sampah'],
-                'satuan' => 'kg',
+                'satuan' => $satuan,
                 'jumlah' => $data['berat_kg'],
                 'gedung' => 'TPS',
-                'kategori_sampah' => $category['dapat_dijual'] ? 'bisa_dijual' : 'tidak_dijual',
+                'kategori_sampah' => $category['dapat_dijual'] ? 'bisa_dijual' : 'tidak_bisa_dijual',
                 'status' => $status
             ];
             
@@ -96,8 +99,12 @@ class WasteService
                 return ['success' => true, 'message' => $message];
             }
 
-            log_message('error', 'TPS Save Waste - Insert failed');
-            return ['success' => false, 'message' => 'Gagal menyimpan data sampah'];
+            // Get database error if insert failed
+            $db = \Config\Database::connect();
+            $error = $db->error();
+            log_message('error', 'TPS Save Waste - Insert failed. DB Error: ' . json_encode($error));
+            
+            return ['success' => false, 'message' => 'Gagal menyimpan data sampah: ' . ($error['message'] ?? 'Unknown error')];
 
         } catch (\Exception $e) {
             log_message('error', 'Save TPS Waste Error: ' . $e->getMessage());
@@ -111,9 +118,13 @@ class WasteService
         try {
             log_message('info', 'TPS Update Waste - Data received: ' . json_encode($data));
             
-            $validation = $this->validateWasteData($data);
-            if (!$validation['valid']) {
-                return ['success' => false, 'message' => $validation['message']];
+            // Validate required fields
+            if (empty($data['kategori_id'])) {
+                return ['success' => false, 'message' => 'Kategori sampah harus dipilih'];
+            }
+            
+            if (empty($data['berat_kg']) || $data['berat_kg'] <= 0) {
+                return ['success' => false, 'message' => 'Berat harus diisi dan lebih dari 0'];
             }
 
             $user = session()->get('user');
@@ -122,6 +133,11 @@ class WasteService
             $waste = $this->wasteModel->find($id);
             if (!$waste || $waste['unit_id'] != $user['unit_id']) {
                 return ['success' => false, 'message' => 'Data sampah tidak ditemukan atau bukan milik TPS Anda'];
+            }
+
+            // Check if waste can be edited
+            if (!in_array($waste['status'], ['draft', 'perlu_revisi'])) {
+                return ['success' => false, 'message' => 'Data yang sudah disubmit tidak dapat diedit'];
             }
 
             // Get category info
@@ -137,19 +153,24 @@ class WasteService
                 $status = 'dikirim';
             }
             
+            // berat_kg sudah dalam kg dari frontend (sudah dikonversi)
+            $beratKg = $data['berat_kg'];
+            $satuan = $data['satuan'] ?? 'kg';
+            
             $wasteData = [
-                'berat_kg' => $data['berat_kg'],
+                'berat_kg' => $beratKg,
+                'jumlah' => $beratKg,
+                'satuan' => $satuan,
                 'jenis_sampah' => $category['jenis_sampah'],
-                'jumlah' => $data['berat_kg'],
-                'kategori_sampah' => $category['dapat_dijual'] ? 'bisa_dijual' : 'tidak_dijual',
+                'kategori_sampah' => $category['dapat_dijual'] ? 'bisa_dijual' : 'tidak_bisa_dijual',
                 'status' => $status
             ];
             
             // Update nilai_rupiah if can be sold
             if ($category['dapat_dijual']) {
-                $wasteData['nilai_rupiah'] = $data['berat_kg'] * $category['harga_per_satuan'];
+                $wasteData['nilai_rupiah'] = $beratKg * $category['harga_per_satuan'];
             } else {
-                $wasteData['nilai_rupiah'] = null;
+                $wasteData['nilai_rupiah'] = 0;
             }
 
             $result = $this->wasteModel->update($id, $wasteData);
@@ -163,7 +184,7 @@ class WasteService
 
         } catch (\Exception $e) {
             log_message('error', 'Update TPS Waste Error: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Terjadi kesalahan sistem'];
+            return ['success' => false, 'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()];
         }
     }
 

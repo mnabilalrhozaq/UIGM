@@ -115,10 +115,10 @@ class LaporanService
     private function getTpsReport(): array
     {
         return $this->wasteModel
-            ->select('units.nama_unit, COUNT(waste.id) as total_entries, SUM(waste.berat_kg) as total_weight')
-            ->join('units', 'units.id = waste.tps_id', 'left')
+            ->select('units.nama_unit, COUNT(waste_management.id) as total_entries, SUM(waste_management.berat_kg) as total_weight')
+            ->join('units', 'units.id = waste_management.unit_id', 'left')
             ->where('units.jenis_unit', 'TPS')
-            ->groupBy('waste.tps_id')
+            ->groupBy('waste_management.unit_id')
             ->orderBy('total_weight', 'DESC')
             ->findAll();
     }

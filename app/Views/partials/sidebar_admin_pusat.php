@@ -26,8 +26,13 @@
             </a>
             
             <a href="<?= base_url('/admin-pusat/manajemen-harga') ?>" class="menu-item <?= (strpos(current_url(), '/admin-pusat/manajemen-harga') !== false) ? 'active' : '' ?>">
-                <i class="fas fa-money-bill-wave"></i>
-                <span>Manajemen Harga</span>
+                <i class="fas fa-recycle"></i>
+                <span>Manajemen Sampah</span>
+            </a>
+            
+            <a href="<?= base_url('/admin-pusat/user-management') ?>" class="menu-item <?= (strpos(current_url(), '/admin-pusat/user-management') !== false) ? 'active' : '' ?>">
+                <i class="fas fa-users"></i>
+                <span>User Management</span>
             </a>
             
             <a href="<?= base_url('/admin-pusat/feature-toggle') ?>" class="menu-item <?= (strpos(current_url(), '/admin-pusat/feature-toggle') !== false) ? 'active' : '' ?>">
@@ -44,11 +49,6 @@
                 Reports & Analytics
             </div>
             
-            <a href="<?= base_url('/admin-pusat/laporan') ?>" class="menu-item <?= (strpos(current_url(), '/admin-pusat/laporan') !== false && strpos(current_url(), 'laporan-waste') === false) ? 'active' : '' ?>">
-                <i class="fas fa-file-alt"></i>
-                <span>Laporan & Monitoring</span>
-            </a>
-            
             <a href="<?= base_url('/admin-pusat/laporan-waste') ?>" class="menu-item <?= (strpos(current_url(), '/admin-pusat/laporan-waste') !== false) ? 'active' : '' ?>">
                 <i class="fas fa-chart-pie"></i>
                 <span>Laporan Waste</span>
@@ -62,14 +62,9 @@
                 System
             </div>
             
-            <a href="<?= base_url('/admin-pusat/user-management') ?>" class="menu-item <?= (strpos(current_url(), '/admin-pusat/user-management') !== false) ? 'active' : '' ?>">
-                <i class="fas fa-users"></i>
-                <span>User Management</span>
-            </a>
-            
-            <a href="<?= base_url('/admin-pusat/pengaturan') ?>" class="menu-item <?= (strpos(current_url(), '/admin-pusat/pengaturan') !== false) ? 'active' : '' ?>">
-                <i class="fas fa-cogs"></i>
-                <span>Pengaturan</span>
+            <a href="<?= base_url('/admin-pusat/profil') ?>" class="menu-item <?= (strpos(current_url(), '/admin-pusat/profil') !== false) ? 'active' : '' ?>">
+                <i class="fas fa-user-circle"></i>
+                <span>Profil Akun</span>
             </a>
         </div>
 

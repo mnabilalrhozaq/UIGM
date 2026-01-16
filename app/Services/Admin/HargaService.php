@@ -172,16 +172,23 @@ class HargaService
                 return ['success' => false, 'message' => 'Data harga tidak ditemukan'];
             }
 
-            // Log before delete
-            $userId = session()->get('user')['id'] ?? 1;
-            $this->logModel->logPriceChange(
-                $id,
-                $harga['jenis_sampah'],
-                $harga['harga_per_satuan'],
-                0,
-                $userId,
-                'Harga dihapus'
-            );
+            // Log before delete (jika logModel tersedia)
+            try {
+                if (isset($this->logModel)) {
+                    $userId = session()->get('user')['id'] ?? 1;
+                    $this->logModel->logPriceChange(
+                        $id,
+                        $harga['jenis_sampah'],
+                        $harga['harga_per_satuan'],
+                        0,
+                        $userId,
+                        'Harga dihapus'
+                    );
+                }
+            } catch (\Exception $logError) {
+                // Log error tapi tetap lanjut hapus
+                log_message('warning', 'Failed to log price change: ' . $logError->getMessage());
+            }
             
             $result = $this->hargaModel->delete($id);
             
@@ -193,7 +200,8 @@ class HargaService
 
         } catch (\Exception $e) {
             log_message('error', 'Delete Harga Error: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Terjadi kesalahan sistem'];
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            return ['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()];
         }
     }
 

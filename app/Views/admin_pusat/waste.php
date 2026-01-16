@@ -30,7 +30,7 @@ function getWasteIcon($jenis) {
         <div class="page-header">
             <div class="header-content">
                 <h1><i class="fas fa-trash-alt"></i> Waste Management</h1>
-                <p>Kelola data waste management dari semua unit</p>
+                <p>Kelola dan monitor data sampah dari semua unit</p>
             </div>
             
             <div class="header-actions">
@@ -38,72 +38,6 @@ function getWasteIcon($jenis) {
                    class="btn btn-success">
                     <i class="fas fa-download"></i> Export CSV
                 </a>
-            </div>
-        </div>
-
-        <!-- Statistics Cards -->
-        <div class="stats-grid">
-            <div class="stat-card primary">
-                <div class="stat-icon">
-                    <i class="fas fa-database"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?= $stats['total'] ?></h3>
-                    <p>Total Data</p>
-                </div>
-            </div>
-            
-            <div class="stat-card success">
-                <div class="stat-icon">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?= $stats['disetujui'] ?></h3>
-                    <p>Disetujui</p>
-                </div>
-            </div>
-            
-            <div class="stat-card warning">
-                <div class="stat-icon">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?= $stats['menunggu_review'] ?></h3>
-                    <p>Menunggu Review</p>
-                </div>
-            </div>
-            
-            <div class="stat-card danger">
-                <div class="stat-icon">
-                    <i class="fas fa-edit"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?= $stats['perlu_revisi'] ?></h3>
-                    <p>Perlu Revisi</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Total Berat per Jenis -->
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-weight"></i>
-                <h3>Total Berat Sampah per Jenis</h3>
-            </div>
-            <div class="card-body">
-                <div class="waste-summary-grid">
-                    <?php foreach ($stats['total_berat'] as $jenis => $berat): ?>
-                    <div class="waste-summary-item">
-                        <div class="waste-icon">
-                            <i class="fas fa-<?= getWasteIcon($jenis) ?>"></i>
-                        </div>
-                        <div class="waste-info">
-                            <h5><?= $jenis ?></h5>
-                            <p><?= number_format($berat, 2) ?> <?= ($jenis === 'Limbah Cair') ? 'L' : 'kg' ?></p>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
             </div>
         </div>
 
@@ -557,105 +491,6 @@ body {
     font-size: 16px;
 }
 
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-.stat-card {
-    background: white;
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    transition: transform 0.3s ease;
-    border-left: 4px solid;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-}
-
-.stat-card.primary { border-left-color: #007bff; }
-.stat-card.success { border-left-color: #28a745; }
-.stat-card.warning { border-left-color: #ffc107; }
-.stat-card.danger { border-left-color: #dc3545; }
-
-.stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    color: white;
-}
-
-.stat-card.primary .stat-icon { background: #007bff; }
-.stat-card.success .stat-icon { background: #28a745; }
-.stat-card.warning .stat-icon { background: #ffc107; }
-.stat-card.danger .stat-icon { background: #dc3545; }
-
-.stat-content h3 {
-    font-size: 28px;
-    font-weight: 700;
-    margin: 0 0 5px 0;
-    color: #2c3e50;
-}
-
-.stat-content p {
-    margin: 0;
-    color: #6c757d;
-    font-weight: 500;
-    font-size: 14px;
-}
-
-.waste-summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 20px;
-}
-
-.waste-summary-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 10px;
-}
-
-.waste-icon {
-    width: 40px;
-    height: 40px;
-    background: #007bff;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-}
-
-.waste-info h5 {
-    margin: 0 0 5px 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-.waste-info p {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: #007bff;
-}
-
 .card {
     background: white;
     border-radius: 15px;
@@ -801,14 +636,6 @@ body {
         flex-direction: column;
         gap: 15px;
         align-items: flex-start;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .waste-summary-grid {
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     }
     
     .action-buttons {

@@ -67,18 +67,18 @@ class DashboardService
         try {
             return [
                 'total_waste_today' => $this->wasteModel
-                    ->where('tps_id', $tpsId)
+                    ->where('unit_id', $tpsId)
                     ->where('DATE(created_at)', $today)
                     ->countAllResults(),
                 
                 'total_waste_month' => $this->wasteModel
-                    ->where('tps_id', $tpsId)
+                    ->where('unit_id', $tpsId)
                     ->where('DATE_FORMAT(created_at, "%Y-%m")', $thisMonth)
                     ->countAllResults(),
                 
                 'total_weight_today' => $this->wasteModel
                     ->selectSum('berat_kg')
-                    ->where('tps_id', $tpsId)
+                    ->where('unit_id', $tpsId)
                     ->where('DATE(created_at)', $today)
                     ->get()
                     ->getRow()
@@ -86,7 +86,7 @@ class DashboardService
                 
                 'total_weight_month' => $this->wasteModel
                     ->selectSum('berat_kg')
-                    ->where('tps_id', $tpsId)
+                    ->where('unit_id', $tpsId)
                     ->where('DATE_FORMAT(created_at, "%Y-%m")', $thisMonth)
                     ->get()
                     ->getRow()
@@ -102,20 +102,13 @@ class DashboardService
     {
         try {
             return $this->wasteModel
-                ->select('waste_management.*, master_harga_sampah.jenis_sampah as kategori, master_harga_sampah.harga_per_satuan as harga_per_kg')
-                ->join('master_harga_sampah', 'master_harga_sampah.id = waste_management.kategori_id', 'left')
-                ->where('waste_management.tps_id', $tpsId)
+                ->where('waste_management.unit_id', $tpsId)
                 ->orderBy('waste_management.created_at', 'DESC')
                 ->limit(10)
                 ->findAll();
         } catch (\Exception $e) {
             log_message('error', 'Error getting recent waste: ' . $e->getMessage());
-            // Fallback without join
-            return $this->wasteModel
-                ->where('tps_id', $tpsId)
-                ->orderBy('created_at', 'DESC')
-                ->limit(10)
-                ->findAll();
+            return [];
         }
     }
 
@@ -126,7 +119,7 @@ class DashboardService
         try {
             return $this->wasteModel
                 ->select('MONTH(created_at) as month, COUNT(*) as count, SUM(berat_kg) as total_weight')
-                ->where('tps_id', $tpsId)
+                ->where('unit_id', $tpsId)
                 ->where('YEAR(created_at)', $currentYear)
                 ->groupBy('MONTH(created_at)')
                 ->orderBy('MONTH(created_at)', 'ASC')

@@ -63,9 +63,6 @@ class DashboardService
     private function getRecentSubmissions(): array
     {
         return $this->wasteModel
-            ->select('waste_management.*, harga_sampah.kategori as jenis_sampah, harga_sampah.harga_per_kg, users.nama_lengkap, users.username, (waste_management.berat_kg * harga_sampah.harga_per_kg) as nilai_jual')
-            ->join('harga_sampah', 'harga_sampah.id = waste_management.kategori_id', 'left')
-            ->join('users', 'users.id = waste_management.created_by', 'left')
             ->where('waste_management.status', 'pending')
             ->orderBy('waste_management.created_at', 'DESC')
             ->limit(5)
@@ -77,8 +74,8 @@ class DashboardService
         $logModel = new \App\Models\HargaLogModel();
         
         return $logModel
-            ->select('harga_log.*, harga_sampah.kategori as jenis_sampah, users.nama_lengkap as admin_nama')
-            ->join('harga_sampah', 'harga_sampah.id = harga_log.harga_id', 'left')
+            ->select('harga_log.*, master_harga_sampah.jenis_sampah, users.nama_lengkap as admin_nama')
+            ->join('master_harga_sampah', 'master_harga_sampah.id = harga_log.harga_id', 'left')
             ->join('users', 'users.id = harga_log.admin_id', 'left')
             ->orderBy('harga_log.created_at', 'DESC')
             ->limit(5)
@@ -88,9 +85,8 @@ class DashboardService
     private function getWasteByType(): array
     {
         return $this->wasteModel
-            ->select('harga_sampah.kategori as jenis_sampah, COUNT(*) as total_records, SUM(waste_management.berat_kg) as total_berat, SUM(waste_management.berat_kg * harga_sampah.harga_per_kg) as total_nilai, SUM(CASE WHEN waste_management.status = "approved" THEN 1 ELSE 0 END) as disetujui, SUM(CASE WHEN waste_management.status = "pending" THEN 1 ELSE 0 END) as menunggu_review')
-            ->join('harga_sampah', 'harga_sampah.id = waste_management.kategori_id', 'left')
-            ->groupBy('waste_management.kategori_id')
+            ->select('jenis_sampah, COUNT(*) as total_records, SUM(berat_kg) as total_berat, SUM(nilai_rupiah) as total_nilai')
+            ->groupBy('jenis_sampah')
             ->orderBy('total_berat', 'DESC')
             ->findAll();
     }
@@ -98,9 +94,8 @@ class DashboardService
     private function calculateTotalValue(): float
     {
         $result = $this->wasteModel
-            ->select('SUM(waste_management.berat_kg * harga_sampah.harga_per_kg) as total_nilai')
-            ->join('harga_sampah', 'harga_sampah.id = waste_management.kategori_id', 'left')
-            ->where('waste_management.status', 'approved')
+            ->selectSum('nilai_rupiah', 'total_nilai')
+            ->where('status', 'approved')
             ->get()
             ->getRow();
 

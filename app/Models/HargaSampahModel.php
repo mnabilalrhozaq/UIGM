@@ -21,7 +21,9 @@ class HargaSampahModel extends Model
         'status_aktif',
         'dapat_dijual',
         'deskripsi',
-        'tanggal_berlaku'
+        'tanggal_berlaku',
+        'created_at',
+        'updated_at'
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -43,10 +45,10 @@ class HargaSampahModel extends Model
     // Validation
     protected $validationRules = [
         'jenis_sampah' => 'required|max_length[100]',
-        'harga_per_satuan' => 'required|decimal',
-        'satuan' => 'required|in_list[kg,ton,liter,pcs,karung]',
-        'status_aktif' => 'required|in_list[0,1]',
-        'dapat_dijual' => 'required|in_list[0,1]'
+        'harga_per_satuan' => 'permit_empty|decimal',
+        'satuan' => 'required|in_list[kg,gram,ton,liter,pcs,karung]',
+        'status_aktif' => 'permit_empty|in_list[0,1]',
+        'dapat_dijual' => 'permit_empty|in_list[0,1]'
     ];
 
     protected $validationMessages = [

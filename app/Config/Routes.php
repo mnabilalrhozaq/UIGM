@@ -29,6 +29,8 @@ $routes->group('admin-pusat', ['filter' => 'role:admin_pusat,super_admin'], func
     require APPPATH . 'Config/Routes/Admin/waste.php';
     require APPPATH . 'Config/Routes/Admin/review.php';
     require APPPATH . 'Config/Routes/Admin/laporan.php';
+    require APPPATH . 'Config/Routes/Admin/laporan_waste.php';
+    require APPPATH . 'Config/Routes/Admin/profil.php';
     require APPPATH . 'Config/Routes/Admin/pengaturan.php';
 });
 
@@ -45,7 +47,8 @@ $routes->group('user', ['filter' => 'role:user'], function ($routes) {
     $routes->get('waste/get/(:num)', 'User\\Waste::get/$1');
     $routes->post('waste/save', 'User\\Waste::save');
     $routes->post('waste/edit/(:num)', 'User\\Waste::edit/$1');
-    $routes->delete('waste/delete/(:num)', 'User\\Waste::delete/$1');
+    $routes->post('waste/delete/(:num)', 'User\\Waste::delete/$1'); // Changed from DELETE to POST
+    $routes->delete('waste/delete/(:num)', 'User\\Waste::delete/$1'); // Keep DELETE for backward compatibility
     $routes->get('waste/export', 'User\\Waste::export');
     
     // Dashboard API
@@ -62,9 +65,11 @@ $routes->group('pengelola-tps', ['filter' => 'role:pengelola_tps'], function ($r
     
     // Waste Management
     $routes->get('waste', 'TPS\\Waste::index');
+    $routes->get('waste/get/(:num)', 'TPS\\Waste::get/$1');
     $routes->post('waste/save', 'TPS\\Waste::save');
     $routes->post('waste/edit/(:num)', 'TPS\\Waste::edit/$1');
-    $routes->delete('waste/delete/(:num)', 'TPS\\Waste::delete/$1');
+    $routes->post('waste/delete/(:num)', 'TPS\\Waste::delete/$1'); // Changed from DELETE to POST
+    $routes->delete('waste/delete/(:num)', 'TPS\\Waste::delete/$1'); // Keep DELETE for backward compatibility
     $routes->get('waste/export', 'TPS\\Waste::export');
 });
 

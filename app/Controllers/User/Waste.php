@@ -72,17 +72,21 @@ class Waste extends BaseController
     {
         try {
             if (!$this->validateSession()) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+                return $this->response
+                    ->setContentType('application/json')
+                    ->setJSON(['success' => false, 'message' => 'Unauthorized']);
             }
 
             $wasteModel = new \App\Models\WasteModel();
             $waste = $wasteModel->find($id);
             
             if (!$waste) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Data tidak ditemukan'
-                ]);
+                return $this->response
+                    ->setContentType('application/json')
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Data tidak ditemukan'
+                    ]);
             }
             
             // Check if user owns this data or has permission
@@ -105,24 +109,30 @@ class Waste extends BaseController
             }
             
             if (!$canEdit) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke data ini'
-                ]);
+                return $this->response
+                    ->setContentType('application/json')
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Anda tidak memiliki akses ke data ini'
+                    ]);
             }
 
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $waste
-            ]);
+            return $this->response
+                ->setContentType('application/json')
+                ->setJSON([
+                    'success' => true,
+                    'data' => $waste
+                ]);
 
         } catch (\Exception $e) {
             log_message('error', 'User Waste Get Error: ' . $e->getMessage());
             
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
-            ]);
+            return $this->response
+                ->setContentType('application/json')
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Error: ' . $e->getMessage()
+                ]);
         }
     }
 
@@ -130,62 +140,182 @@ class Waste extends BaseController
     {
         try {
             if (!$this->validateSession()) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Session invalid']);
+                return $this->response
+                    ->setContentType('application/json')
+                    ->setJSON(['success' => false, 'message' => 'Session invalid']);
             }
 
             $result = $this->wasteService->saveWaste($this->request->getPost());
             
-            return $this->response->setJSON($result);
+            return $this->response
+                ->setContentType('application/json')
+                ->setJSON($result);
 
         } catch (\Exception $e) {
             log_message('error', 'User Waste Save Error: ' . $e->getMessage());
             
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat menyimpan data'
-            ]);
+            return $this->response
+                ->setContentType('application/json')
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat menyimpan data'
+                ]);
         }
     }
 
     public function edit($id)
     {
         try {
+            log_message('info', '=== User Waste Edit START ===');
+            log_message('info', 'ID: ' . $id);
+            log_message('info', 'POST: ' . json_encode($this->request->getPost()));
+            
             if (!$this->validateSession()) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Session invalid']);
+                log_message('warning', 'Session invalid');
+                return $this->response
+                    ->setContentType('application/json')
+                    ->setJSON(['success' => false, 'message' => 'Session invalid']);
             }
 
-            $result = $this->wasteService->updateWaste($id, $this->request->getPost());
+            // Get POST data
+            $data = $this->request->getPost();
             
-            return $this->response->setJSON($result);
+            // Validate
+            if (empty($data['kategori_id'])) {
+                log_message('warning', 'kategori_id empty');
+                return $this->response
+                    ->setContentType('application/json')
+                    ->setJSON(['success' => false, 'message' => 'Kategori sampah harus dipilih']);
+            }
+            
+            if (empty($data['berat_kg']) || $data['berat_kg'] <= 0) {
+                log_message('warning', 'berat_kg invalid: ' . ($data['berat_kg'] ?? 'null'));
+                return $this->response
+                    ->setContentType('application/json')
+                    ->setJSON(['success' => false, 'message' => 'Jumlah/berat harus diisi']);
+            }
+            
+            // Get user
+            $user = session()->get('user');
+            log_message('info', 'User ID: ' . ($user['id'] ?? 'null'));
+            
+            // Get waste
+            $wasteModel = new \App\Models\WasteModel();
+            $waste = $wasteModel->find($id);
+            log_message('info', 'Waste found: ' . ($waste ? 'yes' : 'no'));
+            
+            if (!$waste) {
+                return $this->response
+                    ->setContentType('application/json')
+                    ->setJSON(['success' => false, 'message' => 'Data tidak ditemukan']);
+            }
+            
+            if ($waste['unit_id'] != $user['unit_id']) {
+                return $this->response
+                    ->setContentType('application/json')
+                    ->setJSON(['success' => false, 'message' => 'Bukan milik unit Anda']);
+            }
+            
+            if (!in_array($waste['status'], ['draft', 'perlu_revisi'])) {
+                return $this->response
+                    ->setContentType('application/json')
+                    ->setJSON(['success' => false, 'message' => 'Data sudah disubmit tidak dapat diedit']);
+            }
+            
+            // Get category
+            $hargaModel = new \App\Models\HargaSampahModel();
+            $category = $hargaModel->find($data['kategori_id']);
+            log_message('info', 'Category found: ' . ($category ? 'yes' : 'no'));
+            
+            if (!$category) {
+                return $this->response
+                    ->setContentType('application/json')
+                    ->setJSON(['success' => false, 'message' => 'Kategori tidak ditemukan']);
+            }
+            
+            // Prepare update data
+            $status = (isset($data['status_action']) && $data['status_action'] === 'kirim') ? 'dikirim' : 'draft';
+            
+            // berat_kg sudah dalam kg dari frontend (sudah dikonversi)
+            $beratKg = $data['berat_kg'];
+            $satuan = $data['satuan'] ?? $waste['satuan'] ?? 'kg';
+            
+            $updateData = [
+                'berat_kg' => $beratKg,
+                'jumlah' => $beratKg,
+                'satuan' => $satuan,
+                'jenis_sampah' => $category['jenis_sampah'],
+                'kategori_sampah' => $category['dapat_dijual'] ? 'bisa_dijual' : 'tidak_dijual',
+                'nilai_rupiah' => $category['dapat_dijual'] ? ($beratKg * $category['harga_per_satuan']) : 0,
+                'status' => $status
+            ];
+            
+            log_message('info', 'Update data: ' . json_encode($updateData));
+            
+            // Update
+            $result = $wasteModel->update($id, $updateData);
+            log_message('info', 'Update result: ' . ($result ? 'success' : 'failed'));
+            
+            if ($result) {
+                $message = $status === 'dikirim' ? 'Data berhasil diupdate dan dikirim' : 'Data berhasil diupdate sebagai draft';
+                log_message('info', '=== User Waste Edit SUCCESS ===');
+                return $this->response
+                    ->setContentType('application/json')
+                    ->setJSON(['success' => true, 'message' => $message]);
+            }
+            
+            log_message('error', '=== User Waste Edit FAILED ===');
+            return $this->response
+                ->setContentType('application/json')
+                ->setJSON(['success' => false, 'message' => 'Gagal mengupdate data']);
 
-        } catch (\Exception $e) {
-            log_message('error', 'User Waste Edit Error: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            log_message('error', '=== User Waste Edit EXCEPTION ===');
+            log_message('error', 'Message: ' . $e->getMessage());
+            log_message('error', 'File: ' . $e->getFile() . ':' . $e->getLine());
+            log_message('error', 'Trace: ' . $e->getTraceAsString());
             
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat mengupdate data'
-            ]);
+            return $this->response
+                ->setContentType('application/json')
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Error: ' . $e->getMessage()
+                ]);
         }
     }
 
     public function delete($id)
     {
         try {
+            log_message('info', 'User Delete Waste - ID: ' . $id);
+            
             if (!$this->validateSession()) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Session invalid']);
+                log_message('warning', 'User Delete Waste - Session invalid');
+                return $this->response
+                    ->setStatusCode(401)
+                    ->setContentType('application/json')
+                    ->setJSON(['success' => false, 'message' => 'Session invalid']);
             }
 
+            log_message('info', 'User Delete Waste - Calling service...');
             $result = $this->wasteService->deleteWaste($id);
+            log_message('info', 'User Delete Waste - Result: ' . json_encode($result));
             
-            return $this->response->setJSON($result);
+            return $this->response
+                ->setContentType('application/json')
+                ->setJSON($result);
 
         } catch (\Exception $e) {
             log_message('error', 'User Waste Delete Error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
             
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus data'
-            ]);
+            return $this->response
+                ->setStatusCode(500)
+                ->setContentType('application/json')
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+                ]);
         }
     }
 
@@ -196,8 +326,11 @@ class Waste extends BaseController
                 return redirect()->to('/auth/login');
             }
 
-            if (!isFeatureEnabled('export_data', 'user')) {
-                return redirect()->back()->with('error', 'Fitur export tidak tersedia');
+            // Check if feature toggle function exists
+            if (function_exists('isFeatureEnabled')) {
+                if (!isFeatureEnabled('export_data', 'user')) {
+                    return redirect()->back()->with('error', 'Fitur export tidak tersedia');
+                }
             }
 
             $result = $this->wasteService->exportWaste();

@@ -107,37 +107,124 @@ class WasteService
 
     public function approveWaste(int $id, array $data): array
     {
+        $db = \Config\Database::connect();
+        $db->transStart();
+        
         try {
             $waste = $this->wasteModel->find($id);
             
             if (!$waste) {
+                $db->transRollback();
                 return ['success' => false, 'message' => 'Data sampah tidak ditemukan'];
             }
 
-            if (!in_array($waste['status'], ['dikirim', 'review'])) {
+            if (!in_array($waste['status'], ['dikirim', 'review', 'draft'])) {
+                $db->transRollback();
                 return ['success' => false, 'message' => 'Data sampah tidak dapat disetujui'];
             }
 
-            $updateData = [
-                'status' => 'disetujui',
-                'catatan_admin' => $data['catatan'] ?? null
+            // 1. Insert ke laporan_waste
+            $laporanData = [
+                'waste_id' => $waste['id'],
+                'unit_id' => $waste['unit_id'],
+                'kategori_id' => null,
+                'jenis_sampah' => $waste['jenis_sampah'],
+                'berat_kg' => $waste['berat_kg'],
+                'satuan' => $waste['satuan'] ?? 'kg',
+                'jumlah' => $waste['jumlah'] ?? $waste['berat_kg'],
+                'nilai_rupiah' => $waste['nilai_rupiah'] ?? 0,
+                'tanggal_input' => $waste['tanggal'] ?? date('Y-m-d'),
+                'status' => 'approved',
+                'reviewed_by' => session()->get('user')['id'],
+                'reviewed_at' => date('Y-m-d H:i:s'),
+                'review_notes' => $data['catatan'] ?? 'Disetujui oleh admin',
+                'created_by' => null, // Kolom created_by tidak ada di waste_management
+                'created_at' => date('Y-m-d H:i:s')
             ];
-
-            $result = $this->wasteModel->update($id, $updateData);
             
-            if ($result) {
-                return ['success' => true, 'message' => 'Data sampah berhasil disetujui'];
+            $db->table('laporan_waste')->insert($laporanData);
+            
+            // 2. Delete dari waste_management
+            $this->wasteModel->delete($id);
+            
+            $db->transComplete();
+            
+            if ($db->transStatus() === false) {
+                return ['success' => false, 'message' => 'Gagal menyetujui data sampah'];
             }
 
-            return ['success' => false, 'message' => 'Gagal menyetujui data sampah'];
+            return ['success' => true, 'message' => 'Data sampah berhasil disetujui dan dipindahkan ke laporan'];
 
         } catch (\Exception $e) {
+            $db->transRollback();
             log_message('error', 'Approve Waste Error: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Terjadi kesalahan sistem'];
+            return ['success' => false, 'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()];
         }
     }
 
     public function rejectWaste(int $id, array $data): array
+    {
+        $db = \Config\Database::connect();
+        $db->transStart();
+        
+        try {
+            $waste = $this->wasteModel->find($id);
+            
+            if (!$waste) {
+                $db->transRollback();
+                return ['success' => false, 'message' => 'Data sampah tidak ditemukan'];
+            }
+
+            if (!in_array($waste['status'], ['dikirim', 'review', 'draft'])) {
+                $db->transRollback();
+                return ['success' => false, 'message' => 'Data sampah tidak dapat ditolak'];
+            }
+
+            if (empty($data['catatan'])) {
+                $db->transRollback();
+                return ['success' => false, 'message' => 'Catatan penolakan harus diisi'];
+            }
+
+            // 1. Insert ke laporan_waste dengan status rejected
+            $laporanData = [
+                'waste_id' => $waste['id'],
+                'unit_id' => $waste['unit_id'],
+                'kategori_id' => null,
+                'jenis_sampah' => $waste['jenis_sampah'],
+                'berat_kg' => $waste['berat_kg'],
+                'satuan' => $waste['satuan'] ?? 'kg',
+                'jumlah' => $waste['jumlah'] ?? $waste['berat_kg'],
+                'nilai_rupiah' => 0, // Rejected waste has no value
+                'tanggal_input' => $waste['tanggal'] ?? date('Y-m-d'),
+                'status' => 'rejected',
+                'reviewed_by' => session()->get('user')['id'],
+                'reviewed_at' => date('Y-m-d H:i:s'),
+                'review_notes' => $data['catatan'],
+                'created_by' => null, // Kolom created_by tidak ada di waste_management
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+            
+            $db->table('laporan_waste')->insert($laporanData);
+            
+            // 2. Delete dari waste_management
+            $this->wasteModel->delete($id);
+            
+            $db->transComplete();
+            
+            if ($db->transStatus() === false) {
+                return ['success' => false, 'message' => 'Gagal menolak data sampah'];
+            }
+
+            return ['success' => true, 'message' => 'Data sampah berhasil ditolak dan dipindahkan ke laporan'];
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Reject Waste Error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()];
+        }
+    }
+
+    public function deleteWaste(int $id): array
     {
         try {
             $waste = $this->wasteModel->find($id);
@@ -146,47 +233,49 @@ class WasteService
                 return ['success' => false, 'message' => 'Data sampah tidak ditemukan'];
             }
 
-            if (!in_array($waste['status'], ['dikirim', 'review'])) {
-                return ['success' => false, 'message' => 'Data sampah tidak dapat ditolak'];
-            }
-
-            if (empty($data['catatan'])) {
-                return ['success' => false, 'message' => 'Catatan penolakan harus diisi'];
-            }
-
-            $updateData = [
-                'status' => 'perlu_revisi',
-                'catatan_admin' => $data['catatan']
-            ];
-
-            $result = $this->wasteModel->update($id, $updateData);
+            // Hapus langsung tanpa pindah ke laporan_waste
+            $this->wasteModel->delete($id);
             
-            if ($result) {
-                return ['success' => true, 'message' => 'Data sampah berhasil ditolak'];
-            }
-
-            return ['success' => false, 'message' => 'Gagal menolak data sampah'];
+            return ['success' => true, 'message' => 'Data sampah berhasil dihapus'];
 
         } catch (\Exception $e) {
-            log_message('error', 'Reject Waste Error: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Terjadi kesalahan sistem'];
+            log_message('error', 'Delete Waste Error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()];
         }
     }
 
     private function getWasteList(): array
     {
         try {
-            log_message('info', 'Admin - Getting waste list - SIMPLE QUERY...');
+            log_message('info', 'Admin - Getting waste list with unit names...');
             
-            // Most simple query possible
-            $result = $this->wasteModel->findAll(100);
+            $db = \Config\Database::connect();
             
-            log_message('info', 'Admin - Simple findAll found ' . count($result) . ' records');
+            // Debug: cek total data dulu
+            $totalData = $db->table('waste_management')->countAllResults(false);
+            log_message('info', 'Admin - Total data in waste_management: ' . $totalData);
+            
+            // Debug: cek data per status
+            $statusQuery = $db->table('waste_management')
+                ->select('status, COUNT(*) as count')
+                ->groupBy('status')
+                ->get()
+                ->getResultArray();
+            log_message('info', 'Admin - Status breakdown: ' . json_encode($statusQuery));
+            
+            // Query utama - tanpa filter dulu untuk testing
+            $result = $db->table('waste_management')
+                ->select('waste_management.*, unit.nama_unit')
+                ->join('unit', 'unit.id = waste_management.unit_id', 'left')
+                ->orderBy('waste_management.created_at', 'DESC')
+                ->limit(100)
+                ->get()
+                ->getResultArray();
+            
+            log_message('info', 'Admin - Query found ' . count($result) . ' records (no filter)');
             
             if (!empty($result)) {
                 log_message('info', 'Admin - First record: ' . json_encode($result[0]));
-            } else {
-                log_message('warning', 'Admin - No records found in waste_management table');
             }
             
             return $result;
@@ -200,87 +289,92 @@ class WasteService
 
     private function getWasteSummary(): array
     {
-        $today = date('Y-m-d');
-        $thisMonth = date('Y-m');
-        $thisYear = date('Y');
+        try {
+            $today = date('Y-m-d');
+            $thisMonth = date('Y-m');
+            $thisYear = date('Y');
 
-        return [
-            'total_today' => $this->wasteModel
-                ->where('tanggal', $today)
-                ->countAllResults(),
-            
-            'total_month' => $this->wasteModel
-                ->where('DATE_FORMAT(tanggal, "%Y-%m")', $thisMonth)
-                ->countAllResults(),
-            
-            'total_year' => $this->wasteModel
-                ->where('YEAR(tanggal)', $thisYear)
-                ->countAllResults(),
-            
-            'weight_today' => $this->wasteModel
-                ->selectSum('berat_kg')
-                ->where('tanggal', $today)
-                ->get()
-                ->getRow()
-                ->berat_kg ?? 0,
-            
-            'weight_month' => $this->wasteModel
-                ->selectSum('berat_kg')
-                ->where('DATE_FORMAT(tanggal, "%Y-%m")', $thisMonth)
-                ->get()
-                ->getRow()
-                ->berat_kg ?? 0,
-            
-            'weight_year' => $this->wasteModel
-                ->selectSum('berat_kg')
-                ->where('YEAR(tanggal)', $thisYear)
-                ->get()
-                ->getRow()
-                ->berat_kg ?? 0,
+            return [
+                'total_today' => $this->wasteModel
+                    ->where('tanggal', $today)
+                    ->countAllResults(false) ?? 0,
+                
+                'total_month' => $this->wasteModel
+                    ->where('DATE_FORMAT(tanggal, "%Y-%m")', $thisMonth)
+                    ->countAllResults(false) ?? 0,
+                
+                'total_year' => $this->wasteModel
+                    ->where('YEAR(tanggal)', $thisYear)
+                    ->countAllResults(false) ?? 0,
+                
+                'weight_today' => $this->wasteModel
+                    ->selectSum('berat_kg')
+                    ->where('tanggal', $today)
+                    ->get()
+                    ->getRow()
+                    ->berat_kg ?? 0,
+                
+                'weight_month' => $this->wasteModel
+                    ->selectSum('berat_kg')
+                    ->where('DATE_FORMAT(tanggal, "%Y-%m")', $thisMonth)
+                    ->get()
+                    ->getRow()
+                    ->berat_kg ?? 0,
+                
+                'weight_year' => $this->wasteModel
+                    ->selectSum('berat_kg')
+                    ->where('YEAR(tanggal)', $thisYear)
+                    ->get()
+                    ->getRow()
+                    ->berat_kg ?? 0,
 
-            'dikirim_count' => $this->wasteModel->where('status', 'dikirim')->countAllResults(),
-            'disetujui_count' => $this->wasteModel->where('status', 'disetujui')->countAllResults(),
-            'perlu_revisi_count' => $this->wasteModel->where('status', 'perlu_revisi')->countAllResults()
-        ];
+                'dikirim_count' => $this->wasteModel->where('status', 'dikirim')->countAllResults(false) ?? 0,
+                'disetujui_count' => 0, // Tidak ada lagi di waste_management
+                'perlu_revisi_count' => $this->wasteModel->where('status', 'perlu_revisi')->countAllResults(false) ?? 0
+            ];
+        } catch (\Exception $e) {
+            log_message('error', 'Error in getWasteSummary: ' . $e->getMessage());
+            return $this->getDefaultSummary();
+        }
     }
 
     private function getFilterOptions(): array
     {
-        return [
-            'categories' => $this->hargaModel->findAll(),
-            'units' => $this->unitModel->where('status_aktif', 1)->findAll(),
-            'statuses' => [
-                'pending' => 'Pending',
-                'approved' => 'Disetujui',
-                'rejected' => 'Ditolak',
-                'draft' => 'Draft'
-            ]
-        ];
+        try {
+            return [
+                'categories' => [],
+                'units' => $this->unitModel->where('status_aktif', 1)->findAll() ?? [],
+                'statuses' => [
+                    'draft' => 'Draft',
+                    'dikirim' => 'Dikirim',
+                    'review' => 'Review'
+                ]
+            ];
+        } catch (\Exception $e) {
+            log_message('error', 'Error in getFilterOptions: ' . $e->getMessage());
+            return [
+                'categories' => [],
+                'units' => [],
+                'statuses' => []
+            ];
+        }
     }
 
     private function getWasteStatistics(): array
     {
-        // Get waste by category
-        $categoryStats = $this->wasteModel
-            ->select('harga_sampah.kategori, COUNT(waste.id) as count, SUM(waste.berat_kg) as total_weight')
-            ->join('harga_sampah', 'harga_sampah.id = waste.kategori_id', 'left')
-            ->groupBy('waste.kategori_id')
-            ->orderBy('total_weight', 'DESC')
-            ->findAll();
-
-        // Get waste by unit
-        $unitStats = $this->wasteModel
-            ->select('units.nama_unit, COUNT(waste.id) as count, SUM(waste.berat_kg) as total_weight')
-            ->join('units', 'units.id = waste.unit_id', 'left')
-            ->groupBy('waste.unit_id')
-            ->orderBy('total_weight', 'DESC')
-            ->limit(10)
-            ->findAll();
-
-        return [
-            'by_category' => $categoryStats,
-            'by_unit' => $unitStats
-        ];
+        try {
+            // Simplified statistics - no complex joins
+            return [
+                'by_category' => [],
+                'by_unit' => []
+            ];
+        } catch (\Exception $e) {
+            log_message('error', 'Error in getWasteStatistics: ' . $e->getMessage());
+            return [
+                'by_category' => [],
+                'by_unit' => []
+            ];
+        }
     }
 
     private function getDefaultSummary(): array

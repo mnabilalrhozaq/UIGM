@@ -49,9 +49,9 @@ class WasteModel extends Model
     protected $validationRules = [
         'unit_id' => 'required|integer',
         'tanggal' => 'required|valid_date',
-        'jenis_sampah' => 'required|in_list[Kertas,Plastik,Organik,Anorganik,Limbah Cair,B3,Logam,Residu]',
+        'jenis_sampah' => 'required|max_length[100]', // Ubah dari in_list ke max_length
         'satuan' => 'required|max_length[10]',
-        'jumlah' => 'required|numeric|greater_than[0]', // Ubah dari decimal ke numeric
+        'jumlah' => 'required|numeric|greater_than[0]',
         'gedung' => 'required|max_length[50]',
         'status' => 'required|in_list[draft,dikirim,review,disetujui,perlu_revisi]'
     ];
@@ -67,7 +67,7 @@ class WasteModel extends Model
         ],
         'jenis_sampah' => [
             'required' => 'Jenis sampah harus diisi',
-            'in_list' => 'Jenis sampah tidak valid'
+            'max_length' => 'Jenis sampah maksimal 100 karakter'
         ],
         'jumlah' => [
             'required' => 'Jumlah harus diisi',

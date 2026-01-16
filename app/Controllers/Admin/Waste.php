@@ -23,30 +23,26 @@ class Waste extends BaseController
 
             log_message('info', 'Admin Waste Controller - Starting index...');
             
-            // Direct query for debugging
-            $db = \Config\Database::connect();
-            $query = $db->query("SELECT * FROM waste_management ORDER BY created_at DESC LIMIT 100");
-            $directData = $query->getResultArray();
-            
-            log_message('info', 'Admin Waste Controller - Direct query found: ' . count($directData) . ' records');
-            
             $data = $this->wasteService->getWasteData();
             
             log_message('info', 'Admin Waste Controller - Service returned: ' . count($data['waste_list']) . ' records');
+            log_message('info', 'Admin Waste Controller - Data: ' . json_encode($data));
             
-            // Use direct data if service returns empty
-            if (empty($data['waste_list']) && !empty($directData)) {
-                log_message('warning', 'Admin Waste Controller - Using direct query data instead of service');
-                $data['waste_list'] = $directData;
-            }
+            // Debug: Cek langsung dari database
+            $db = \Config\Database::connect();
+            $directCount = $db->table('waste_management')->countAllResults();
+            log_message('info', 'Admin Waste Controller - Direct count from DB: ' . $directCount);
             
             $viewData = [
-                'title' => 'Review Data Sampah',
+                'title' => 'Waste Management',
                 'waste_list' => $data['waste_list'],
                 'summary' => $data['summary'],
                 'filters' => $data['filters'] ?? [],
                 'statistics' => $data['statistics'] ?? []
             ];
+            
+            // Debug: Log view data
+            log_message('info', 'Admin Waste Controller - Sending to view: ' . count($viewData['waste_list']) . ' records');
 
             return view('admin_pusat/waste_management', $viewData);
 
@@ -55,7 +51,7 @@ class Waste extends BaseController
             log_message('error', 'Stack trace: ' . $e->getTraceAsString());
             
             return view('admin_pusat/waste_management', [
-                'title' => 'Review Data Sampah',
+                'title' => 'Waste Management',
                 'waste_list' => [],
                 'summary' => [],
                 'error' => 'Terjadi kesalahan saat memuat data sampah: ' . $e->getMessage()
@@ -148,6 +144,38 @@ class Waste extends BaseController
                 ->setJSON([
                     'success' => false,
                     'message' => 'Terjadi kesalahan saat menolak data: ' . $e->getMessage()
+                ]);
+        }
+    }
+
+    public function delete($id)
+    {
+        try {
+            if (!$this->validateSession()) {
+                return $this->response
+                    ->setStatusCode(401)
+                    ->setJSON(['success' => false, 'message' => 'Session invalid']);
+            }
+
+            log_message('info', 'Admin - Deleting waste ID: ' . $id);
+
+            $result = $this->wasteService->deleteWaste($id);
+            
+            log_message('info', 'Admin - Delete result: ' . json_encode($result));
+            
+            return $this->response
+                ->setContentType('application/json')
+                ->setJSON($result);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Admin Waste Delete Error: ' . $e->getMessage());
+            
+            return $this->response
+                ->setStatusCode(500)
+                ->setContentType('application/json')
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
                 ]);
         }
     }

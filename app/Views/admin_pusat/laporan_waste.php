@@ -80,47 +80,94 @@
             </div>
             <div class="card-body">
                 <form method="GET" action="<?= base_url('/admin-pusat/laporan-waste') ?>" class="filter-form">
-                    <div class="row">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label for="periode" class="form-label">Periode</label>
+                            <select name="periode" id="periode" class="form-select">
+                                <option value="harian" <?= ($filters['periode'] ?? 'harian') == 'harian' ? 'selected' : '' ?>>Per Hari</option>
+                                <option value="bulanan" <?= ($filters['periode'] ?? '') == 'bulanan' ? 'selected' : '' ?>>Per Bulan</option>
+                                <option value="tahunan" <?= ($filters['periode'] ?? '') == 'tahunan' ? 'selected' : '' ?>>Per Tahun</option>
+                                <option value="custom" <?= ($filters['periode'] ?? '') == 'custom' ? 'selected' : '' ?>>Custom Range</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3" id="filter-tanggal">
+                            <label for="tanggal" class="form-label">Tanggal</label>
+                            <input type="date" name="tanggal" id="tanggal" class="form-control" 
+                                   value="<?= $filters['tanggal'] ?? date('Y-m-d') ?>">
+                        </div>
+                        
+                        <div class="col-md-3" id="filter-bulan">
+                            <label for="bulan" class="form-label">Bulan</label>
+                            <select name="bulan" id="bulan" class="form-select">
+                                <?php 
+                                $bulanList = ['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', 
+                                              '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
+                                              '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'];
+                                foreach ($bulanList as $num => $nama):
+                                ?>
+                                <option value="<?= $num ?>" <?= ($filters['bulan'] ?? date('m')) == $num ? 'selected' : '' ?>>
+                                    <?= $nama ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
                         <div class="col-md-3">
                             <label for="tahun" class="form-label">Tahun</label>
                             <select name="tahun" id="tahun" class="form-select">
                                 <?php for ($i = date('Y'); $i >= 2020; $i--): ?>
-                                <option value="<?= $i ?>" <?= ($filters['tahun'] == $i) ? 'selected' : '' ?>>
+                                <option value="<?= $i ?>" <?= ($filters['tahun'] ?? date('Y')) == $i ? 'selected' : '' ?>>
                                     <?= $i ?>
                                 </option>
                                 <?php endfor; ?>
                             </select>
                         </div>
-                        
-                        <div class="col-md-3">
+                    </div>
+                    
+                    <div class="row mb-3" id="filter-custom" style="display: none;">
+                        <div class="col-md-4">
+                            <label for="tanggal_mulai" class="form-label">Tanggal Mulai</label>
+                            <input type="date" name="tanggal_mulai" id="tanggal_mulai" class="form-control" 
+                                   value="<?= $filters['tanggal_mulai'] ?? '' ?>">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="tanggal_selesai" class="form-label">Tanggal Selesai</label>
+                            <input type="date" name="tanggal_selesai" id="tanggal_selesai" class="form-control" 
+                                   value="<?= $filters['tanggal_selesai'] ?? '' ?>">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
                             <label for="unit" class="form-label">Unit</label>
                             <select name="unit" id="unit" class="form-select">
                                 <option value="">Semua Unit</option>
                                 <?php foreach ($allUnits as $unit): ?>
-                                <option value="<?= $unit['id'] ?>" <?= ($filters['unit'] == $unit['id']) ? 'selected' : '' ?>>
+                                <option value="<?= $unit['id'] ?>" <?= ($filters['unit'] ?? '') == $unit['id'] ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($unit['nama_unit']) ?>
                                 </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label for="jenis" class="form-label">Jenis Sampah</label>
                             <select name="jenis" id="jenis" class="form-select">
                                 <option value="">Semua Jenis</option>
                                 <?php foreach ($allJenis as $jenis): ?>
-                                <option value="<?= $jenis ?>" <?= ($filters['jenis'] == $jenis) ? 'selected' : '' ?>>
+                                <option value="<?= $jenis ?>" <?= ($filters['jenis'] ?? '') == $jenis ? 'selected' : '' ?>>
                                     <?= $jenis ?>
                                 </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label">&nbsp;</label>
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-search"></i> Filter
+                                    <i class="fas fa-search"></i> Tampilkan Laporan
                                 </button>
                             </div>
                         </div>
@@ -128,6 +175,33 @@
                 </form>
             </div>
         </div>
+        
+        <script>
+        // Toggle filter fields based on periode selection
+        document.getElementById('periode').addEventListener('change', function() {
+            const periode = this.value;
+            const filterTanggal = document.getElementById('filter-tanggal');
+            const filterBulan = document.getElementById('filter-bulan');
+            const filterCustom = document.getElementById('filter-custom');
+            
+            // Hide all first
+            filterTanggal.style.display = 'none';
+            filterBulan.style.display = 'none';
+            filterCustom.style.display = 'none';
+            
+            // Show based on selection
+            if (periode === 'harian') {
+                filterTanggal.style.display = 'block';
+            } else if (periode === 'bulanan') {
+                filterBulan.style.display = 'block';
+            } else if (periode === 'custom') {
+                filterCustom.style.display = 'flex';
+            }
+        });
+        
+        // Trigger on page load
+        document.getElementById('periode').dispatchEvent(new Event('change'));
+        </script>
 
         <!-- Rekap per Jenis Sampah -->
         <div class="card">

@@ -133,17 +133,18 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
             <div class="card-body">
                 <?php if (!empty($waste_list)): ?>
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover" style="table-layout: auto; min-width: 100%;">
                             <thead>
                                 <tr>
-                                    <th>No</th>
-                                    <th>Tanggal</th>
-                                    <th>Kategori</th>
-                                    <th>Berat (kg)</th>
-                                    <th>Harga/kg</th>
-                                    <th>Total Nilai</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
+                                    <th style="width: 50px;">No</th>
+                                    <th style="width: 140px;">Tanggal</th>
+                                    <th style="width: 120px;">Kategori</th>
+                                    <th style="width: 80px;">Berat</th>
+                                    <th style="width: 70px;">Satuan</th>
+                                    <th style="width: 100px;">Harga/Satuan</th>
+                                    <th style="width: 120px;">Total Nilai</th>
+                                    <th style="width: 100px;">Status</th>
+                                    <th style="width: 120px; min-width: 120px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -154,7 +155,8 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                                     <td>
                                         <span class="badge bg-primary"><?= $waste['jenis_sampah'] ?? 'N/A' ?></span>
                                     </td>
-                                    <td><?= number_format($waste['berat_kg'], 2) ?></td>
+                                    <td><?= number_format($waste['berat_kg'] ?? $waste['berat'] ?? $waste['jumlah_berat'] ?? 0, 2) ?></td>
+                                    <td><?= $waste['satuan'] ?? 'kg' ?></td>
                                     <td>-</td>
                                     <td><?= formatCurrency($waste['nilai_rupiah'] ?? 0) ?></td>
                                     <td>
@@ -178,7 +180,8 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                                         ?>
                                         <span class="badge bg-<?= $statusClass ?>"><?= $statusLabel ?></span>
                                     </td>
-                                    <td>
+                                    <td style="white-space: nowrap;">
+                                        <?php if (in_array($waste['status'] ?? 'draft', ['draft', 'perlu_revisi'])): ?>
                                         <div class="btn-group btn-group-sm">
                                             <button type="button" class="btn btn-outline-primary" onclick="editWaste(<?= $waste['id'] ?>)">
                                                 <i class="fas fa-edit"></i>
@@ -187,6 +190,9 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
+                                        <?php else: ?>
+                                        <span class="text-muted" style="font-size: 11px;">Tidak dapat diedit</span>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -218,16 +224,16 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                     <?= csrf_field() ?>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="kategori_id" class="form-label">Kategori Sampah *</label>
+                            <label for="kategori_id" class="form-label">Jenis Sampah *</label>
                             <select class="form-select" id="kategori_id" name="kategori_id" required>
-                                <option value="">Pilih Kategori</option>
+                                <option value="">Pilih Jenis Sampah</option>
                                 <?php foreach ($categories as $category): ?>
                                 <option value="<?= $category['id'] ?>" 
                                         data-harga="<?= $category['harga_per_satuan'] ?>"
                                         data-satuan="<?= $category['satuan'] ?>"
                                         data-jenis="<?= $category['jenis_sampah'] ?>"
                                         data-dapat-dijual="<?= $category['dapat_dijual'] ?>">
-                                    <?= $category['jenis_sampah'] ?>
+                                    <?= $category['nama_jenis'] ?> (<?= $category['jenis_sampah'] ?>)
                                 </option>
                                 <?php endforeach; ?>
                             </select>
@@ -245,8 +251,8 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                                     <select class="form-select" id="satuan" name="satuan" required>
                                         <option value="">Pilih Satuan</option>
                                         <option value="kg">Kilogram (kg)</option>
-                                        <option value="ton">Ton</option>
                                         <option value="gram">Gram (g)</option>
+                                        <option value="ton">Ton</option>
                                         <option value="liter">Liter (L)</option>
                                         <option value="pcs">Pieces (pcs)</option>
                                         <option value="karung">Karung</option>
@@ -255,13 +261,13 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Harga per Satuan</label>
-                            <input type="text" class="form-control" id="harga_display" readonly value="Rp 0">
+                            <label for="harga_display" class="form-label">Harga per Satuan</label>
+                            <input type="text" class="form-control" id="harga_display" name="harga_display" readonly value="Rp 0">
                             <small class="text-muted" id="konversi_info"></small>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Total Nilai</label>
-                            <input type="text" class="form-control fw-bold text-success" id="total_nilai_display" readonly value="Rp 0" style="font-size: 1.2em;">
+                            <label for="total_nilai_display" class="form-label">Total Nilai</label>
+                            <input type="text" class="form-control fw-bold text-success" id="total_nilai_display" name="total_nilai_display" readonly value="Rp 0" style="font-size: 1.2em;">
                             <small class="text-muted">* Hanya untuk sampah yang dapat dijual</small>
                         </div>
                     </div>
@@ -288,28 +294,42 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                     <input type="hidden" id="edit_waste_id" name="waste_id">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="edit_kategori_id" class="form-label">Kategori Sampah *</label>
-                            <select class="form-select bg-light" id="edit_kategori_id_display" disabled style="cursor: not-allowed; opacity: 0.6;">
-                                <option value="">Pilih Kategori</option>
+                            <label for="edit_kategori_id_display" class="form-label">Jenis Sampah *</label>
+                            <select class="form-select bg-light" id="edit_kategori_id_display" name="kategori_id_display" disabled style="cursor: not-allowed; opacity: 0.6;">
+                                <option value="">Pilih Jenis Sampah</option>
                                 <?php foreach ($categories as $category): ?>
                                 <option value="<?= $category['id'] ?>" 
                                         data-harga="<?= $category['harga_per_satuan'] ?>"
                                         data-satuan="<?= $category['satuan'] ?>"
                                         data-jenis="<?= $category['jenis_sampah'] ?>"
                                         data-dapat-dijual="<?= $category['dapat_dijual'] ?>">
-                                    <?= $category['jenis_sampah'] ?>
+                                    <?= $category['nama_jenis'] ?> (<?= $category['jenis_sampah'] ?>)
                                 </option>
                                 <?php endforeach; ?>
                             </select>
                             <input type="hidden" id="edit_kategori_id" name="kategori_id">
-                            <small class="text-muted"><i class="fas fa-lock"></i> Kategori sampah tidak dapat diubah saat edit</small>
+                            <small class="text-muted"><i class="fas fa-lock"></i> Jenis sampah tidak dapat diubah saat edit</small>
                         </div>
-                        <div class="mb-3">
-                            <label for="edit_berat_kg" class="form-label">Berat (kg)</label>
-                            <input type="number" class="form-control" id="edit_berat_kg" name="berat_kg" step="0.01" min="0.01" required>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_berat" class="form-label">Jumlah *</label>
+                                    <input type="number" class="form-control" id="edit_berat" name="berat_kg" step="0.01" min="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_unit_id" class="form-label">Satuan *</label>
+                                    <input type="text" class="form-control bg-light" id="edit_unit_id" name="satuan" readonly style="cursor: not-allowed;">
+                                    <small class="text-muted"><i class="fas fa-lock"></i> Satuan mengikuti data awal</small>
+                                </div>
+                            </div>
                         </div>
+                        
                         <div class="mb-3">
                             <div class="alert alert-info">
+                                <strong>Berat dalam kg:</strong> <span id="edit_berat_kg_display">0 kg</span><br>
                                 <strong>Estimasi Nilai:</strong> <span id="edit_estimasi_nilai">Rp 0</span>
                             </div>
                         </div>
@@ -337,6 +357,19 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                 'karung': 25 // Asumsi 1 karung = 25 kg
             };
             return jumlah * (konversi[satuan] || 1);
+        }
+
+        // Konversi dari kg ke satuan lain
+        function konversiDariKg(beratKg, satuan) {
+            const konversi = {
+                'kg': 1,
+                'ton': 1000,
+                'gram': 0.001,
+                'liter': 1,
+                'pcs': 0.1,
+                'karung': 25
+            };
+            return beratKg / (konversi[satuan] || 1);
         }
 
         // Calculate estimated value with auto-update
@@ -450,6 +483,14 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
             const wasteId = document.getElementById('edit_waste_id').value;
             const formData = new FormData(this);
             
+            // Konversi jumlah ke kg untuk disimpan
+            const berat = parseFloat(formData.get('berat_kg')) || 0;
+            const satuan = formData.get('satuan') || 'kg';
+            const beratKg = konversiKeKg(berat, satuan);
+            
+            // Update berat_kg dengan nilai yang sudah dikonversi
+            formData.set('berat_kg', beratKg);
+            
             // Get action from clicked button
             const action = e.submitter ? e.submitter.value : 'draft';
             formData.append('status_action', action);
@@ -473,41 +514,97 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
         });
 
         // Edit waste form - calculate estimate
-        document.getElementById('edit_kategori_id').addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const harga = parseFloat(selectedOption.getAttribute('data-harga')) || 0;
-            const berat = parseFloat(document.getElementById('edit_berat_kg').value) || 0;
-            const total = harga * berat;
-            document.getElementById('edit_estimasi_nilai').textContent = 'Rp ' + total.toLocaleString('id-ID');
-        });
-
-        document.getElementById('edit_berat_kg').addEventListener('input', function() {
-            const kategoriSelect = document.getElementById('edit_kategori_id');
+        function calculateEditEstimate() {
+            const kategoriSelect = document.getElementById('edit_kategori_id_display');
             const selectedOption = kategoriSelect.options[kategoriSelect.selectedIndex];
             const harga = parseFloat(selectedOption.getAttribute('data-harga')) || 0;
-            const berat = parseFloat(this.value) || 0;
-            const total = harga * berat;
+            const berat = parseFloat(document.getElementById('edit_berat').value) || 0;
+            const satuan = document.getElementById('edit_unit_id').value || 'kg';
+            
+            // Konversi ke kg
+            const beratKg = konversiKeKg(berat, satuan);
+            
+            // Update displays
+            document.getElementById('edit_berat_kg_display').textContent = beratKg.toLocaleString('id-ID') + ' kg';
+            
+            const total = harga * beratKg;
             document.getElementById('edit_estimasi_nilai').textContent = 'Rp ' + total.toLocaleString('id-ID');
-        });
+        }
+
+        document.getElementById('edit_berat').addEventListener('input', calculateEditEstimate);
 
         // Edit waste function
         function editWaste(id) {
-            // Get waste data and populate edit form
-            // This would typically fetch data via AJAX
-            const editModal = new bootstrap.Modal(document.getElementById('editWasteModal'));
-            document.getElementById('edit_waste_id').value = id;
-            editModal.show();
+            // Fetch waste data
+            fetch(`<?= base_url('/pengelola-tps/waste/get/') ?>${id}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const waste = data.data;
+                    
+                    // Find kategori_id from jenis_sampah
+                    const kategoriSelect = document.getElementById('edit_kategori_id_display');
+                    let kategoriId = null;
+                    
+                    // Try to find matching category
+                    for (let option of kategoriSelect.options) {
+                        const optionText = option.textContent.toLowerCase();
+                        const wasteJenis = (waste.jenis_sampah || '').toLowerCase();
+                        
+                        // Check if option contains the jenis_sampah (in parentheses)
+                        if (option.value && optionText.includes(wasteJenis)) {
+                            kategoriId = option.value;
+                            kategoriSelect.value = option.value;
+                            break;
+                        }
+                    }
+                    
+                    // Populate form
+                    document.getElementById('edit_waste_id').value = waste.id;
+                    document.getElementById('edit_kategori_id').value = kategoriId || waste.kategori_id || '';
+                    
+                    // Konversi berat_kg kembali ke satuan asli
+                    const beratKg = waste.berat_kg || waste.jumlah || waste.berat || 0;
+                    const satuan = waste.satuan || 'kg';
+                    const beratAsli = konversiDariKg(beratKg, satuan);
+                    
+                    document.getElementById('edit_berat').value = beratAsli;
+                    document.getElementById('edit_unit_id').value = satuan;
+                    
+                    // Calculate estimate
+                    calculateEditEstimate();
+                    
+                    // Show modal
+                    const editModal = new bootstrap.Modal(document.getElementById('editWasteModal'));
+                    editModal.show();
+                } else {
+                    alert('Gagal mengambil data: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat mengambil data');
+            });
         }
 
         // Delete waste function
         function deleteWaste(id) {
             if (confirm('Apakah Anda yakin ingin menghapus data sampah ini?')) {
+                const formData = new FormData();
+                formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+                
                 fetch(`<?= base_url('/pengelola-tps/waste/delete/') ?>${id}`, {
-                    method: 'DELETE'
+                    method: 'POST',
+                    body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        alert(data.message);
                         location.reload();
                     } else {
                         alert('Error: ' + data.message);

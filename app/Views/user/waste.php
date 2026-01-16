@@ -179,17 +179,18 @@ $stats = $stats ?? [];
             <div class="card-body">
                 <?php if (!empty($waste_list)): ?>
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover" style="table-layout: auto; min-width: 100%;">
                             <thead>
                                 <tr>
-                                    <th>No</th>
-                                    <th>Tanggal</th>
-                                    <th>Kategori</th>
-                                    <th>Berat (kg)</th>
-                                    <th>Harga/kg</th>
-                                    <th>Total Nilai</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
+                                    <th style="width: 50px;">No</th>
+                                    <th style="width: 140px;">Tanggal</th>
+                                    <th style="width: 120px;">Kategori</th>
+                                    <th style="width: 80px;">Berat</th>
+                                    <th style="width: 70px;">Satuan</th>
+                                    <th style="width: 100px;">Harga/Satuan</th>
+                                    <th style="width: 120px;">Total Nilai</th>
+                                    <th style="width: 100px;">Status</th>
+                                    <th style="width: 120px; min-width: 120px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -200,7 +201,8 @@ $stats = $stats ?? [];
                                     <td>
                                         <span class="badge bg-primary"><?= $waste['jenis_sampah'] ?? 'N/A' ?></span>
                                     </td>
-                                    <td><?= number_format($waste['berat_kg'], 2) ?></td>
+                                    <td><?= number_format($waste['berat_kg'] ?? $waste['jumlah'] ?? 0, 2) ?></td>
+                                    <td><?= $waste['satuan'] ?? 'kg' ?></td>
                                     <td>-</td>
                                     <td><?= formatCurrency($waste['nilai_rupiah'] ?? 0) ?></td>
                                     <td>
@@ -224,7 +226,7 @@ $stats = $stats ?? [];
                                         ?>
                                         <span class="badge bg-<?= $statusClass ?>"><?= $statusLabel ?></span>
                                     </td>
-                                    <td>
+                                    <td style="white-space: nowrap;">
                                         <?php if (in_array($waste['status'] ?? 'draft', ['draft', 'perlu_revisi'])): ?>
                                         <div class="btn-group btn-group-sm">
                                             <button type="button" class="btn btn-outline-primary" onclick="editWaste(<?= $waste['id'] ?>)">
@@ -235,7 +237,7 @@ $stats = $stats ?? [];
                                             </button>
                                         </div>
                                         <?php else: ?>
-                                        <span class="text-muted">Tidak dapat diedit</span>
+                                        <span class="text-muted" style="font-size: 11px;">Tidak dapat diedit</span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -268,16 +270,16 @@ $stats = $stats ?? [];
                     <?= csrf_field() ?>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="kategori_id" class="form-label">Kategori Sampah *</label>
+                            <label for="kategori_id" class="form-label">Jenis Sampah *</label>
                             <select class="form-select" id="kategori_id" name="kategori_id" required>
-                                <option value="">Pilih Kategori</option>
+                                <option value="">Pilih Jenis Sampah</option>
                                 <?php foreach ($categories as $category): ?>
                                 <option value="<?= $category['id'] ?>" 
                                         data-harga="<?= $category['harga_per_satuan'] ?>"
                                         data-satuan="<?= $category['satuan'] ?>"
                                         data-jenis="<?= $category['jenis_sampah'] ?>"
                                         data-dapat-dijual="<?= $category['dapat_dijual'] ?>">
-                                    <?= $category['jenis_sampah'] ?>
+                                    <?= $category['nama_jenis'] ?> (<?= $category['jenis_sampah'] ?>)
                                 </option>
                                 <?php endforeach; ?>
                             </select>
@@ -295,8 +297,8 @@ $stats = $stats ?? [];
                                     <select class="form-select" id="satuan" name="satuan" required>
                                         <option value="">Pilih Satuan</option>
                                         <option value="kg">Kilogram (kg)</option>
-                                        <option value="ton">Ton</option>
                                         <option value="gram">Gram (g)</option>
+                                        <option value="ton">Ton</option>
                                         <option value="liter">Liter (L)</option>
                                         <option value="pcs">Pieces (pcs)</option>
                                         <option value="karung">Karung</option>
@@ -338,37 +340,31 @@ $stats = $stats ?? [];
                     <input type="hidden" id="edit_waste_id" name="waste_id">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="edit_kategori_id" class="form-label">Kategori Sampah *</label>
+                            <label for="edit_kategori_id_display" class="form-label">Jenis Sampah *</label>
                             <select class="form-select bg-light" id="edit_kategori_id_display" disabled style="cursor: not-allowed; opacity: 0.6;">
-                                <option value="">Pilih Kategori</option>
+                                <option value="">Pilih Jenis Sampah</option>
                                 <?php foreach ($categories as $category): ?>
                                 <option value="<?= $category['id'] ?>" data-harga="<?= $category['harga_per_satuan'] ?>">
-                                    <?= $category['jenis_sampah'] ?> - <?= formatCurrency($category['harga_per_satuan']) ?>/<?= $category['satuan'] ?>
+                                    <?= $category['nama_jenis'] ?> (<?= $category['jenis_sampah'] ?>)
                                 </option>
                                 <?php endforeach; ?>
                             </select>
                             <input type="hidden" id="edit_kategori_id" name="kategori_id">
-                            <small class="text-muted"><i class="fas fa-lock"></i> Kategori sampah tidak dapat diubah saat edit</small>
+                            <small class="text-muted"><i class="fas fa-lock"></i> Jenis sampah tidak dapat diubah saat edit</small>
                         </div>
                         
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="edit_berat" class="form-label">Jumlah</label>
-                                    <input type="number" class="form-control" id="edit_berat" name="berat" step="0.01" min="0.01" required>
+                                    <label for="edit_berat" class="form-label">Jumlah *</label>
+                                    <input type="number" class="form-control" id="edit_berat" name="berat_kg" step="0.01" min="0.01" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="edit_unit_id" class="form-label">Satuan</label>
-                                    <select class="form-select" id="edit_unit_id" name="unit_id" required>
-                                        <option value="kg">Kilogram (kg)</option>
-                                        <option value="ton">Ton</option>
-                                        <option value="gram">Gram</option>
-                                        <option value="liter">Liter</option>
-                                        <option value="pcs">Pieces (pcs)</option>
-                                        <option value="karung">Karung</option>
-                                    </select>
+                                    <label for="edit_unit_id" class="form-label">Satuan *</label>
+                                    <input type="text" class="form-control bg-light" id="edit_unit_id" name="satuan" readonly style="cursor: not-allowed;">
+                                    <small class="text-muted"><i class="fas fa-lock"></i> Satuan mengikuti data awal</small>
                                 </div>
                             </div>
                         </div>
@@ -403,6 +399,19 @@ $stats = $stats ?? [];
                 'karung': 25 // Asumsi 1 karung = 25 kg
             };
             return jumlah * (konversi[satuan] || 1);
+        }
+
+        // Konversi dari kg ke satuan lain
+        function konversiDariKg(beratKg, satuan) {
+            const konversi = {
+                'kg': 1,
+                'ton': 1000,
+                'gram': 0.001,
+                'liter': 1,
+                'pcs': 0.1,
+                'karung': 25
+            };
+            return beratKg / (konversi[satuan] || 1);
         }
 
         // Calculate estimated value with auto-update
@@ -513,9 +522,20 @@ $stats = $stats ?? [];
             const wasteId = document.getElementById('edit_waste_id').value;
             const formData = new FormData(this);
             
+            // Konversi jumlah ke kg untuk disimpan
+            const berat = parseFloat(formData.get('berat_kg')) || 0;
+            const satuan = formData.get('satuan') || 'kg';
+            const beratKg = konversiKeKg(berat, satuan);
+            
+            // Update berat_kg dengan nilai yang sudah dikonversi
+            formData.set('berat_kg', beratKg);
+            
             // Get action from clicked button
             const action = e.submitter ? e.submitter.value : 'draft';
             formData.append('status_action', action);
+            
+            console.log('Submitting edit form for waste ID:', wasteId);
+            console.log('Form data:', Object.fromEntries(formData));
             
             fetch(`<?= base_url('/user/waste/edit/') ?>${wasteId}`, {
                 method: 'POST',
@@ -523,7 +543,9 @@ $stats = $stats ?? [];
             })
             .then(response => response.json())
             .then(data => {
+                console.log('Edit response:', data);
                 if (data.success) {
+                    alert(data.message);
                     location.reload();
                 } else {
                     alert('Error: ' + data.message);
@@ -545,19 +567,54 @@ $stats = $stats ?? [];
             })
             .then(response => response.json())
             .then(data => {
+                console.log('Edit waste response:', data);
+                
                 if (data.success) {
                     const waste = data.data;
+                    console.log('Waste data:', waste);
+                    
+                    // Find kategori_id from jenis_sampah
+                    const kategoriSelect = document.getElementById('edit_kategori_id_display');
+                    let kategoriId = null;
+                    
+                    // Try to find matching category
+                    for (let option of kategoriSelect.options) {
+                        const optionText = option.textContent.toLowerCase();
+                        const wasteJenis = (waste.jenis_sampah || '').toLowerCase();
+                        
+                        // Check if option contains the jenis_sampah (in parentheses)
+                        if (option.value && optionText.includes(wasteJenis)) {
+                            kategoriId = option.value;
+                            kategoriSelect.value = option.value;
+                            console.log('Found matching category:', kategoriId, optionText);
+                            break;
+                        }
+                    }
+                    
+                    // If not found, try to get from categories list
+                    if (!kategoriId) {
+                        console.warn('Category not found for jenis_sampah:', waste.jenis_sampah);
+                        // Set first option as fallback
+                        if (kategoriSelect.options.length > 1) {
+                            kategoriId = kategoriSelect.options[1].value;
+                            kategoriSelect.value = kategoriId;
+                        }
+                    }
                     
                     // Populate form
                     document.getElementById('edit_waste_id').value = waste.id;
-                    document.getElementById('edit_kategori_id').value = waste.kategori_id || waste.jenis_sampah;
-                    document.getElementById('edit_kategori_id_display').value = waste.kategori_id || waste.jenis_sampah;
-                    document.getElementById('edit_berat').value = waste.berat;
-                    document.getElementById('edit_unit_id').value = waste.unit_id || 'kg';
+                    document.getElementById('edit_kategori_id').value = kategoriId || '';
                     
-                    // Disable kategori if status is draft or submitted
-                    const isLocked = ['draft', 'dikirim', 'disetujui'].includes(waste.status);
-                    document.getElementById('edit_kategori_id_display').disabled = true; // Always disabled
+                    // Konversi berat_kg kembali ke satuan asli
+                    const beratKg = waste.berat_kg || waste.berat || waste.jumlah || 0;
+                    const satuan = waste.satuan || 'kg';
+                    const beratAsli = konversiDariKg(beratKg, satuan);
+                    
+                    document.getElementById('edit_berat').value = beratAsli;
+                    document.getElementById('edit_unit_id').value = satuan;
+                    
+                    console.log('Form populated with kategori_id:', kategoriId);
+                    console.log('Berat asli:', beratAsli, satuan, '(dari', beratKg, 'kg)');
                     
                     // Calculate estimate
                     hitungEditEstimasi();
@@ -578,12 +635,17 @@ $stats = $stats ?? [];
         // Delete waste function
         function deleteWaste(id) {
             if (confirm('Apakah Anda yakin ingin menghapus data sampah ini?')) {
+                const formData = new FormData();
+                formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+                
                 fetch(`<?= base_url('/user/waste/delete/') ?>${id}`, {
-                    method: 'DELETE'
+                    method: 'POST',
+                    body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        alert(data.message);
                         location.reload();
                     } else {
                         alert('Error: ' + data.message);

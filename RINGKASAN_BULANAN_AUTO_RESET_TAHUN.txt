@@ -1,0 +1,163 @@
+RINGKASAN BULANAN - AUTO UPDATE TAHUN & RESET DATA
+===================================================
+Tanggal: 23 Januari 2026
+
+REQUIREMENT:
+============
+Bagian "Ringkasan Bulanan 2026" harus:
+1. Otomatis update tahun saat berganti tahun (2026 → 2027)
+2. Data ringkasan di-reset dari 0 saat tahun baru
+3. Hanya menampilkan data tahun berjalan
+
+IMPLEMENTASI YANG SUDAH ADA:
+=============================
+
+1. VIEW (app/Views/pengelola_tps/dashboard.php)
+   Baris 205:
+   <h3><i class="fas fa-chart-bar"></i> Ringkasan Bulanan <?= date('Y') ?></h3>
+   
+   ✅ Tahun sudah otomatis menggunakan date('Y')
+   ✅ Saat tahun berganti, otomatis tampil tahun baru
+
+2. SERVICE (app/Services/TPS/DashboardService.php)
+   Method: getMonthlySummary()
+   Baris 127-137:
+   
+   private function getMonthlySummary(int $tpsId): array
+   {
+       $currentYear = date('Y');
+       
+       try {
+           return $this->wasteModel
+               ->select('MONTH(created_at) as month, COUNT(*) as count, SUM(berat_kg) as total_weight')
+               ->where('unit_id', $tpsId)
+               ->where('YEAR(created_at)', $currentYear)  // ← FILTER TAHUN
+               ->groupBy('MONTH(created_at)')
+               ->orderBy('MONTH(created_at)', 'ASC')
+               ->findAll();
+       } catch (\Exception $e) {
+           log_message('error', 'Error getting monthly summary: ' . $e->getMessage());
+           return [];
+       }
+   }
+   
+   ✅ Query sudah filter berdasarkan tahun berjalan
+   ✅ Hanya ambil data dengan YEAR(created_at) = tahun sekarang
+   ✅ Saat tahun berganti, otomatis ambil data tahun baru
+
+CARA KERJA:
+===========
+
+Tahun 2026 (Sekarang):
+-----------------------
+- Header: "Ringkasan Bulanan 2026"
+- Query: WHERE YEAR(created_at) = 2026
+- Data: Hanya data tahun 2026 yang ditampilkan
+- Ringkasan:
+  * Jan 2026: 10 data, 50 kg
+  * Feb 2026: 15 data, 75 kg
+  * dst...
+
+Tahun 2027 (Nanti):
+-------------------
+- Header: "Ringkasan Bulanan 2027" ← OTOMATIS UPDATE
+- Query: WHERE YEAR(created_at) = 2027 ← OTOMATIS GANTI
+- Data: Hanya data tahun 2027 yang ditampilkan
+- Ringkasan:
+  * Jan 2027: 0 data, 0 kg ← MULAI DARI 0
+  * Feb 2027: 0 data, 0 kg
+  * dst...
+
+Data tahun 2026 TIDAK HILANG, hanya tidak ditampilkan di ringkasan.
+Data tetap ada di database untuk keperluan historis/laporan.
+
+TESTING:
+========
+
+1. Test Manual (Simulasi Tahun Baru):
+   - Ubah tanggal sistem ke 1 Januari 2027
+   - Refresh dashboard TPS
+   - Cek header: harus "Ringkasan Bulanan 2027"
+   - Cek data: semua bulan harus 0 (karena belum ada data 2027)
+
+2. Test dengan Data:
+   - Tambah data sampah dengan tanggal 2026
+   - Cek dashboard: data muncul di ringkasan 2026
+   - Ubah tanggal sistem ke 2027
+   - Refresh dashboard: data 2026 tidak muncul
+   - Tambah data sampah dengan tanggal 2027
+   - Cek dashboard: hanya data 2027 yang muncul
+
+3. Test Query Database:
+   -- Data tahun 2026
+   SELECT MONTH(created_at) as month, COUNT(*) as count, SUM(berat_kg) as total_weight
+   FROM waste_management
+   WHERE unit_id = 1 AND YEAR(created_at) = 2026
+   GROUP BY MONTH(created_at);
+   
+   -- Data tahun 2027
+   SELECT MONTH(created_at) as month, COUNT(*) as count, SUM(berat_kg) as total_weight
+   FROM waste_management
+   WHERE unit_id = 1 AND YEAR(created_at) = 2027
+   GROUP BY MONTH(created_at);
+
+BENEFIT:
+========
+
+1. ✅ Tidak perlu update manual setiap tahun
+2. ✅ Data otomatis ter-filter per tahun
+3. ✅ Ringkasan selalu menampilkan tahun berjalan
+4. ✅ Data historis tetap tersimpan di database
+5. ✅ Tidak perlu reset manual saat tahun baru
+
+CATATAN PENTING:
+================
+
+1. Data Historis:
+   - Data tahun lama TIDAK DIHAPUS dari database
+   - Hanya tidak ditampilkan di ringkasan bulanan
+   - Tetap bisa diakses via laporan/export dengan filter tahun
+
+2. Timezone:
+   - Pastikan server timezone sudah benar
+   - date('Y') menggunakan timezone server
+   - Jika timezone salah, tahun bisa tidak akurat
+
+3. Laporan Tahunan:
+   - Jika perlu laporan tahunan, buat fitur terpisah
+   - Filter data berdasarkan tahun yang dipilih
+   - Bisa compare antar tahun
+
+REKOMENDASI TAMBAHAN:
+=====================
+
+1. Tambah Filter Tahun (Opsional):
+   - Dropdown untuk pilih tahun
+   - User bisa lihat ringkasan tahun lalu
+   - Default: tahun berjalan
+   
+   <select id="year-filter">
+       <option value="2027">2027</option>
+       <option value="2026">2026</option>
+       <option value="2025">2025</option>
+   </select>
+
+2. Notifikasi Tahun Baru (Opsional):
+   - Saat login pertama di tahun baru
+   - Tampilkan notifikasi: "Selamat Tahun Baru! Ringkasan dimulai dari 0"
+   - Info bahwa data tahun lalu masih bisa diakses
+
+3. Laporan Tahunan (Opsional):
+   - Fitur untuk generate laporan tahunan
+   - Export data per tahun
+   - Perbandingan antar tahun
+
+STATUS: ✅ SUDAH BERFUNGSI
+
+Sistem sudah otomatis:
+- Tahun di header otomatis update
+- Data otomatis filter per tahun
+- Ringkasan otomatis reset saat tahun baru
+
+TIDAK PERLU MODIFIKASI APAPUN!
+Sistem sudah bekerja dengan benar.

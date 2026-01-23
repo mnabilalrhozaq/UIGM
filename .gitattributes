@@ -1,58 +1,96 @@
-# =====================================
-# Global text normalization
-# =====================================
-* text=auto eol=lf
+# Auto detect text files and perform LF normalization
+* text=auto
 
-# =====================================
-# PHP & Framework Files
-# =====================================
+# Source code
 *.php text eol=lf
-*.env text eol=lf
-*.htaccess text eol=lf
-
-# =====================================
-# Frontend Assets
-# =====================================
-*.js text eol=lf
 *.css text eol=lf
-*.html text eol=lf
+*.scss text eol=lf
+*.js text eol=lf
 *.json text eol=lf
 *.xml text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
 
-# =====================================
+# Templates
+*.html text eol=lf
+*.twig text eol=lf
+*.blade.php text eol=lf
+
 # Documentation
-# =====================================
 *.md text eol=lf
 *.txt text eol=lf
+*.rst text eol=lf
 
-# =====================================
-# Shell & Script Files
-# =====================================
+# Config files
+.htaccess text eol=lf
+.editorconfig text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+
+# SQL files
+*.sql text eol=lf
+
+# Shell scripts
 *.sh text eol=lf
-*.bat text eol=crlf
+*.bash text eol=lf
 
-# =====================================
-# Binary files (DO NOT TOUCH LINE ENDING)
-# =====================================
+# Windows scripts
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files
 *.png binary
 *.jpg binary
 *.jpeg binary
 *.gif binary
-*.svg binary
 *.ico binary
-*.pdf binary
+*.mov binary
+*.mp4 binary
+*.mp3 binary
+*.flv binary
+*.fla binary
+*.swf binary
+*.gz binary
 *.zip binary
+*.7z binary
+*.ttf binary
+*.eot binary
+*.woff binary
+*.woff2 binary
+*.pyc binary
+*.pdf binary
+*.ez binary
+*.bz2 binary
+*.swp binary
+*.db binary
+*.sqlite binary
+
+# Archives
+*.7z binary
+*.jar binary
 *.rar binary
-*.exe binary
+*.zip binary
+*.gz binary
+*.bzip binary
+*.bz2 binary
+*.xz binary
+*.lzma binary
+*.cab binary
 
-# =====================================
-# Database Dumps
-# =====================================
-*.sql text eol=lf
+# Packing-only files
+*.iso binary
+*.tar binary
 
-# =====================================
-# Ignore vendor-generated files
-# =====================================
-vendor/* linguist-generated
+# Patch files
+*.patch -text
+
+# Exclude files from exporting
+.gitattributes export-ignore
+.gitignore export-ignore
+.github export-ignore
+tests/ export-ignore
+.editorconfig export-ignore
+.php_cs export-ignore
+phpunit.xml export-ignore
+*.md export-ignore

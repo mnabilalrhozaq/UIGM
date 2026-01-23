@@ -4,16 +4,19 @@ namespace App\Services\Admin;
 
 use App\Models\HargaSampahModel;
 use App\Models\HargaLogModel;
+use App\Models\ChangeLogModel;
 
 class HargaService
 {
     protected $hargaModel;
     protected $logModel;
+    protected $changeLogModel;
 
     public function __construct()
     {
         $this->hargaModel = new HargaSampahModel();
         $this->logModel = new HargaLogModel();
+        $this->changeLogModel = new ChangeLogModel();
     }
 
     public function getHargaData(): array
@@ -56,16 +59,35 @@ class HargaService
             $result = $this->hargaModel->insert($hargaData);
             
             if ($result) {
-                // Log the change
+                $insertId = $this->hargaModel->getInsertID();
+                
+                // Log to harga_log
                 $userId = session()->get('user')['id'] ?? 1;
                 $this->logModel->logPriceChange(
-                    $result,
+                    $insertId,
                     $hargaData['jenis_sampah'],
                     null,
                     $hargaData['harga_per_satuan'],
                     $userId,
                     'Harga baru ditambahkan'
                 );
+                
+                // Log to change_logs
+                $user = session()->get('user');
+                $this->changeLogModel->insertLog([
+                    'user_id' => $userId,
+                    'user_name' => $user['nama_lengkap'] ?? $user['username'] ?? 'Admin',
+                    'action' => 'create',
+                    'entity' => 'harga_sampah',
+                    'entity_id' => $insertId,
+                    'summary' => "Menambahkan jenis sampah baru: {$hargaData['jenis_sampah']} - {$hargaData['nama_jenis']}",
+                    'new_value' => json_encode([
+                        'jenis_sampah' => $hargaData['jenis_sampah'],
+                        'nama_jenis' => $hargaData['nama_jenis'],
+                        'harga_per_satuan' => $hargaData['harga_per_satuan'],
+                        'satuan' => $hargaData['satuan']
+                    ])
+                ]);
                 
                 return ['success' => true, 'message' => 'Harga berhasil ditambahkan'];
             }
@@ -105,7 +127,7 @@ class HargaService
             $result = $this->hargaModel->update($id, $hargaData);
             
             if ($result) {
-                // Log the change
+                // Log to harga_log
                 $userId = session()->get('user')['id'] ?? 1;
                 $this->logModel->logPriceChange(
                     $id,
@@ -115,6 +137,35 @@ class HargaService
                     $userId,
                     'Harga diupdate'
                 );
+                
+                // Log to change_logs
+                $user = session()->get('user');
+                $changes = [];
+                if ($oldData['harga_per_satuan'] != $hargaData['harga_per_satuan']) {
+                    $changes[] = "Harga: Rp " . number_format($oldData['harga_per_satuan'], 0, ',', '.') . " → Rp " . number_format($hargaData['harga_per_satuan'], 0, ',', '.');
+                }
+                if ($oldData['jenis_sampah'] != $hargaData['jenis_sampah']) {
+                    $changes[] = "Kategori: {$oldData['jenis_sampah']} → {$hargaData['jenis_sampah']}";
+                }
+                if ($oldData['nama_jenis'] != $hargaData['nama_jenis']) {
+                    $changes[] = "Nama: {$oldData['nama_jenis']} → {$hargaData['nama_jenis']}";
+                }
+                
+                $summary = "Mengupdate {$hargaData['jenis_sampah']} - {$hargaData['nama_jenis']}";
+                if (!empty($changes)) {
+                    $summary .= " (" . implode(', ', $changes) . ")";
+                }
+                
+                $this->changeLogModel->insertLog([
+                    'user_id' => $userId,
+                    'user_name' => $user['nama_lengkap'] ?? $user['username'] ?? 'Admin',
+                    'action' => 'update',
+                    'entity' => 'harga_sampah',
+                    'entity_id' => $id,
+                    'summary' => $summary,
+                    'old_value' => json_encode($oldData),
+                    'new_value' => json_encode($hargaData)
+                ]);
                 
                 return ['success' => true, 'message' => 'Harga berhasil diupdate'];
             }
@@ -142,7 +193,7 @@ class HargaService
             ]);
 
             if ($result) {
-                // Log the change
+                // Log to harga_log
                 $userId = session()->get('user')['id'] ?? 1;
                 $this->logModel->logPriceChange(
                     $id,
@@ -152,6 +203,19 @@ class HargaService
                     $userId,
                     'Status diubah menjadi ' . ($newStatus ? 'aktif' : 'nonaktif')
                 );
+                
+                // Log to change_logs
+                $user = session()->get('user');
+                $this->changeLogModel->insertLog([
+                    'user_id' => $userId,
+                    'user_name' => $user['nama_lengkap'] ?? $user['username'] ?? 'Admin',
+                    'action' => 'update',
+                    'entity' => 'harga_sampah',
+                    'entity_id' => $id,
+                    'summary' => "Mengubah status {$harga['jenis_sampah']} - {$harga['nama_jenis']} menjadi " . ($newStatus ? 'aktif' : 'nonaktif'),
+                    'old_value' => json_encode(['status_aktif' => !$newStatus]),
+                    'new_value' => json_encode(['status_aktif' => $newStatus])
+                ]);
                 
                 return ['success' => true, 'message' => 'Status berhasil diubah'];
             }
@@ -172,10 +236,13 @@ class HargaService
                 return ['success' => false, 'message' => 'Data harga tidak ditemukan'];
             }
 
-            // Log before delete (jika logModel tersedia)
+            // Log before delete
             try {
+                $userId = session()->get('user')['id'] ?? 1;
+                $user = session()->get('user');
+                
+                // Log to harga_log
                 if (isset($this->logModel)) {
-                    $userId = session()->get('user')['id'] ?? 1;
                     $this->logModel->logPriceChange(
                         $id,
                         $harga['jenis_sampah'],
@@ -185,6 +252,17 @@ class HargaService
                         'Harga dihapus'
                     );
                 }
+                
+                // Log to change_logs
+                $this->changeLogModel->insertLog([
+                    'user_id' => $userId,
+                    'user_name' => $user['nama_lengkap'] ?? $user['username'] ?? 'Admin',
+                    'action' => 'delete',
+                    'entity' => 'harga_sampah',
+                    'entity_id' => $id,
+                    'summary' => "Menghapus jenis sampah: {$harga['jenis_sampah']} - {$harga['nama_jenis']}",
+                    'old_value' => json_encode($harga)
+                ]);
             } catch (\Exception $logError) {
                 // Log error tapi tetap lanjut hapus
                 log_message('warning', 'Failed to log price change: ' . $logError->getMessage());

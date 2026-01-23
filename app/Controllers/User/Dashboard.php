@@ -28,10 +28,11 @@ class Dashboard extends BaseController
                 'user' => $data['user'],
                 'unit' => $data['unit'],
                 'stats' => $data['stats'],
-                'wasteOverallStats' => $data['stats'],
-                'wasteStats' => [],
-                'recentActivities' => $data['recent_activities'],
-                'featureData' => $data['feature_data']
+                'wasteOverallStats' => $data['wasteOverallStats'] ?? [],
+                'wasteStats' => $data['wasteStats'] ?? [],
+                'wasteManagementSummary' => $data['wasteManagementSummary'] ?? [],
+                'recentActivities' => $data['recent_activities'] ?? [],
+                'featureData' => $data['feature_data'] ?? []
             ];
 
             return view('user/dashboard', $viewData);
@@ -46,6 +47,7 @@ class Dashboard extends BaseController
                 'stats' => [],
                 'wasteOverallStats' => [],
                 'wasteStats' => [],
+                'wasteManagementSummary' => [],
                 'recentActivities' => [],
                 'featureData' => [],
                 'error' => 'Terjadi kesalahan saat memuat dashboard'

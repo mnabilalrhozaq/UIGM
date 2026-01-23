@@ -30,6 +30,8 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
     <title><?= $title ?? 'Manajemen Sampah TPS' ?></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Mobile Responsive CSS -->
+    <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
     <?= $this->include('partials/sidebar_pengelola_tps') ?>
@@ -69,8 +71,8 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWasteModal">
                 <i class="fas fa-plus"></i> Tambah Data Sampah
             </button>
-            <a href="<?= base_url('/pengelola-tps/waste/export') ?>" class="btn btn-success">
-                <i class="fas fa-download"></i> Export Data
+            <a href="<?= base_url('/pengelola-tps/waste/export-pdf') ?>" class="btn btn-danger" target="_blank">
+                <i class="fas fa-file-pdf"></i> Export PDF
             </a>
         </div>
 
@@ -111,6 +113,55 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                     </div>
                     <?php endforeach; ?>
                 </div>
+                
+                <!-- Pagination untuk Informasi Harga Sampah -->
+                <?php if (isset($pagerHarga) && $pagerHarga && $pagerHarga->getPageCount('harga') > 1): ?>
+                <div class="mt-4">
+                    <nav aria-label="Pagination Harga Sampah">
+                        <ul class="pagination justify-content-center">
+                            <!-- Previous Button -->
+                            <?php if ($pagerHarga->getCurrentPage('harga') > 1): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="<?= base_url('/pengelola-tps/waste?page_harga=' . ($pagerHarga->getCurrentPage('harga') - 1)) ?>">
+                                        <span>&laquo; Previous</span>
+                                    </a>
+                                </li>
+                            <?php else: ?>
+                                <li class="page-item disabled">
+                                    <span class="page-link">&laquo; Previous</span>
+                                </li>
+                            <?php endif; ?>
+
+                            <!-- Page Numbers -->
+                            <?php for ($i = 1; $i <= $pagerHarga->getPageCount('harga'); $i++): ?>
+                                <?php if ($i == $pagerHarga->getCurrentPage('harga')): ?>
+                                    <li class="page-item active">
+                                        <span class="page-link"><?= $i ?></span>
+                                    </li>
+                                <?php else: ?>
+                                    <li class="page-item">
+                                        <a class="page-link" href="<?= base_url('/pengelola-tps/waste?page_harga=' . $i) ?>"><?= $i ?></a>
+                                    </li>
+                                <?php endif; ?>
+                            <?php endfor; ?>
+
+                            <!-- Next Button -->
+                            <?php if ($pagerHarga->getCurrentPage('harga') < $pagerHarga->getPageCount('harga')): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="<?= base_url('/pengelola-tps/waste?page_harga=' . ($pagerHarga->getCurrentPage('harga') + 1)) ?>">
+                                        <span>Next &raquo;</span>
+                                    </a>
+                                </li>
+                            <?php else: ?>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Next &raquo;</span>
+                                </li>
+                            <?php endif; ?>
+                        </ul>
+                    </nav>
+                </div>
+                <?php endif; ?>
+                
                 <div class="alert alert-info mt-3">
                     <i class="fas fa-info-circle"></i>
                     <strong>Catatan:</strong> Harga sampah dapat berubah sewaktu-waktu. 
@@ -138,7 +189,7 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                                 <tr>
                                     <th style="width: 50px;">No</th>
                                     <th style="width: 140px;">Tanggal</th>
-                                    <th style="width: 120px;">Kategori</th>
+                                    <th style="width: 150px;">Jenis Sampah</th>
                                     <th style="width: 80px;">Berat</th>
                                     <th style="width: 70px;">Satuan</th>
                                     <th style="width: 100px;">Harga/Satuan</th>
@@ -155,7 +206,13 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                                     <td>
                                         <span class="badge bg-primary"><?= $waste['jenis_sampah'] ?? 'N/A' ?></span>
                                     </td>
-                                    <td><?= number_format($waste['berat_kg'] ?? $waste['berat'] ?? $waste['jumlah_berat'] ?? 0, 2) ?></td>
+                                    <td><?php 
+                                        // Format angka tanpa desimal yang tidak perlu
+                                        $berat = $waste['berat_kg'] ?? $waste['berat'] ?? $waste['jumlah_berat'] ?? 0;
+                                        $jumlah = $waste['jumlah'] ?? $berat;
+                                        // Jika angka bulat, tampilkan tanpa desimal
+                                        echo ($jumlah == floor($jumlah)) ? number_format($jumlah, 0, ',', '.') : number_format($jumlah, 2, ',', '.');
+                                    ?></td>
                                     <td><?= $waste['satuan'] ?? 'kg' ?></td>
                                     <td>-</td>
                                     <td><?= formatCurrency($waste['nilai_rupiah'] ?? 0) ?></td>
@@ -227,7 +284,11 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                             <label for="kategori_id" class="form-label">Jenis Sampah *</label>
                             <select class="form-select" id="kategori_id" name="kategori_id" required>
                                 <option value="">Pilih Jenis Sampah</option>
-                                <?php foreach ($categories as $category): ?>
+                                <?php 
+                                // Gunakan allCategories untuk dropdown (semua data tanpa pagination)
+                                $dropdownCategories = isset($allCategories) && !empty($allCategories) ? $allCategories : $categories;
+                                foreach ($dropdownCategories as $category): 
+                                ?>
                                 <option value="<?= $category['id'] ?>" 
                                         data-harga="<?= $category['harga_per_satuan'] ?>"
                                         data-satuan="<?= $category['satuan'] ?>"
@@ -297,7 +358,11 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                             <label for="edit_kategori_id_display" class="form-label">Jenis Sampah *</label>
                             <select class="form-select bg-light" id="edit_kategori_id_display" name="kategori_id_display" disabled style="cursor: not-allowed; opacity: 0.6;">
                                 <option value="">Pilih Jenis Sampah</option>
-                                <?php foreach ($categories as $category): ?>
+                                <?php 
+                                // Gunakan allCategories untuk dropdown (semua data tanpa pagination)
+                                $dropdownCategories = isset($allCategories) && !empty($allCategories) ? $allCategories : $categories;
+                                foreach ($dropdownCategories as $category): 
+                                ?>
                                 <option value="<?= $category['id'] ?>" 
                                         data-harga="<?= $category['harga_per_satuan'] ?>"
                                         data-satuan="<?= $category['satuan'] ?>"
@@ -382,8 +447,8 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
             const totalDisplay = document.getElementById('total_nilai_display');
 
             const selectedOption = kategoriSelect.options[kategoriSelect.selectedIndex];
-            const hargaPerKg = parseFloat(selectedOption.getAttribute('data-harga')) || 0;
-            const satuanDefault = selectedOption.getAttribute('data-satuan') || 'kg';
+            const hargaPerSatuan = parseFloat(selectedOption.getAttribute('data-harga')) || 0;
+            const satuanMaster = selectedOption.getAttribute('data-satuan') || 'kg'; // Satuan dari master harga
             const jenisKategori = selectedOption.getAttribute('data-jenis') || '';
             const dapatDijual = selectedOption.getAttribute('data-dapat-dijual') == '1';
 
@@ -392,7 +457,7 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
 
             // Set satuan default jika belum dipilih
             if (!satuan && jenisKategori) {
-                satuanSelect.value = satuanDefault;
+                satuanSelect.value = satuanMaster;
             }
 
             if (!satuan || !jumlah || !jenisKategori) {
@@ -402,11 +467,12 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
                 return;
             }
 
-            // Konversi ke kg
+            // Konversi ke kg untuk perhitungan
             const jumlahKg = konversiKeKg(jumlah, satuan);
+            const hargaPerKg = hargaPerSatuan / konversiKeKg(1, satuanMaster); // Konversi harga ke per kg
 
-            // Update displays
-            hargaDisplay.value = 'Rp ' + hargaPerKg.toLocaleString('id-ID') + '/kg';
+            // Update displays - GUNAKAN SATUAN DARI MASTER
+            hargaDisplay.value = 'Rp ' + hargaPerSatuan.toLocaleString('id-ID') + '/' + satuanMaster;
 
             // Info konversi
             if (satuan !== 'kg') {
@@ -617,6 +683,8 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
             }
         }
     </script>
+    <!-- Mobile Menu JS -->
+    <script src="<?= base_url('/js/mobile-menu.js') ?>"></script>
 </body>
 </html>
 

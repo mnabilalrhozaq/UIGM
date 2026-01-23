@@ -23,7 +23,8 @@ class Waste extends BaseController
 
             log_message('info', 'Admin Waste Controller - Starting index...');
             
-            $data = $this->wasteService->getWasteData();
+            $page = $this->request->getGet('page') ?? 1;
+            $data = $this->wasteService->getWasteData($page, 10);
             
             log_message('info', 'Admin Waste Controller - Service returned: ' . count($data['waste_list']) . ' records');
             log_message('info', 'Admin Waste Controller - Data: ' . json_encode($data));
@@ -38,7 +39,8 @@ class Waste extends BaseController
                 'waste_list' => $data['waste_list'],
                 'summary' => $data['summary'],
                 'filters' => $data['filters'] ?? [],
-                'statistics' => $data['statistics'] ?? []
+                'statistics' => $data['statistics'] ?? [],
+                'pager' => $data['pager'] ?? null
             ];
             
             // Debug: Log view data

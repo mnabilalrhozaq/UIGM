@@ -38,6 +38,8 @@ if (!function_exists('formatNumber')) {
     <title><?= $title ?? 'Dashboard TPS' ?></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Mobile Responsive CSS -->
+    <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
     <?= $this->include('partials/sidebar_pengelola_tps') ?>
@@ -67,102 +69,127 @@ if (!function_exists('formatNumber')) {
         <div class="stats-grid">
             <div class="stat-card primary">
                 <div class="stat-icon">
-                    <i class="fas fa-calendar-day"></i>
+                    <i class="fas fa-check-circle"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?= displayStat($stats, 'total_waste_today') ?></h3>
-                    <p>Waste Hari Ini</p>
+                    <h3><?= displayStat($wasteOverallStats, 'disetujui') ?></h3>
+                    <p>Data Disetujui</p>
                 </div>
             </div>
             
-            <div class="stat-card success">
+            <div class="stat-card danger">
                 <div class="stat-icon">
-                    <i class="fas fa-calendar-alt"></i>
+                    <i class="fas fa-times-circle"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?= displayStat($stats, 'total_waste_month') ?></h3>
-                    <p>Waste Bulan Ini</p>
+                    <h3><?= displayStat($wasteOverallStats, 'ditolak') ?></h3>
+                    <p>Data Ditolak</p>
                 </div>
             </div>
             
             <div class="stat-card warning">
                 <div class="stat-icon">
-                    <i class="fas fa-weight-hanging"></i>
+                    <i class="fas fa-paper-plane"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?= formatNumber(displayStat($stats, 'total_weight_today')) ?> kg</h3>
-                    <p>Berat Hari Ini</p>
+                    <h3><?= displayStat($wasteOverallStats, 'menunggu_review') ?></h3>
+                    <p>Menunggu Review</p>
                 </div>
             </div>
             
             <div class="stat-card info">
                 <div class="stat-icon">
-                    <i class="fas fa-balance-scale"></i>
+                    <i class="fas fa-save"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?= formatNumber(displayStat($stats, 'total_weight_month')) ?> kg</h3>
-                    <p>Berat Bulan Ini</p>
+                    <h3><?= displayStat($wasteOverallStats, 'draft') ?></h3>
+                    <p>Draft</p>
                 </div>
             </div>
         </div>
 
         <!-- Recent Waste Data -->
+        <!-- Ringkasan Waste Management -->
         <div class="card">
             <div class="card-header">
-                <h3><i class="fas fa-history"></i> Data Waste Terbaru</h3>
+                <h3><i class="fas fa-trash-alt"></i> Ringkasan Waste Management</h3>
                 <div class="card-actions">
                     <a href="<?= base_url('/pengelola-tps/waste') ?>" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus"></i> Input Data
                     </a>
-                    <a href="<?= base_url('/pengelola-tps/waste/export') ?>" class="btn btn-success btn-sm">
-                        <i class="fas fa-download"></i> Export
+                    <a href="<?= base_url('/pengelola-tps/waste/export-pdf') ?>" class="btn btn-danger btn-sm" target="_blank">
+                        <i class="fas fa-file-pdf"></i> Export PDF
                     </a>
                 </div>
             </div>
             <div class="card-body">
-                <?php if (!empty($recent_waste)): ?>
+                <?php if (!empty($wasteManagementSummary)): ?>
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
                                 <tr>
                                     <th>Tanggal</th>
-                                    <th>Kategori</th>
+                                    <th>Jenis Sampah</th>
                                     <th>Berat (kg)</th>
-                                    <th>Harga/kg</th>
-                                    <th>Total Nilai</th>
+                                    <th>Satuan</th>
+                                    <th>Nilai (Rp)</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($recent_waste as $waste): ?>
+                                <?php foreach ($wasteManagementSummary as $item): ?>
                                 <tr>
-                                    <td><?= date('d/m/Y H:i', strtotime($waste['created_at'])) ?></td>
-                                    <td>
-                                        <span class="badge bg-primary"><?= $waste['kategori'] ?? 'N/A' ?></span>
-                                    </td>
-                                    <td><?= number_format($waste['berat_kg'], 2) ?></td>
-                                    <td>Rp <?= number_format($waste['harga_per_kg'] ?? 0, 0, ',', '.') ?></td>
-                                    <td>Rp <?= number_format(($waste['berat_kg'] * ($waste['harga_per_kg'] ?? 0)), 0, ',', '.') ?></td>
+                                    <td><?= date('d/m/Y', strtotime($item['created_at'])) ?></td>
+                                    <td><?= esc($item['jenis_sampah']) ?></td>
+                                    <td><?= number_format($item['berat_kg'], 2) ?></td>
+                                    <td><?= esc($item['satuan'] ?? 'kg') ?></td>
+                                    <td><?= number_format($item['nilai_rupiah'] ?? 0, 0, ',', '.') ?></td>
                                     <td>
                                         <?php
-                                        $statusClass = match($waste['status']) {
-                                            'approved' => 'success',
-                                            'pending' => 'warning',
-                                            'rejected' => 'danger',
-                                            default => 'secondary'
-                                        };
+                                        $statusClass = '';
+                                        $statusText = '';
+                                        switch($item['status']) {
+                                            case 'draft':
+                                                $statusClass = 'badge bg-secondary';
+                                                $statusText = 'Draft';
+                                                break;
+                                            case 'dikirim':
+                                                $statusClass = 'badge bg-info';
+                                                $statusText = 'Dikirim';
+                                                break;
+                                            case 'review':
+                                                $statusClass = 'badge bg-warning';
+                                                $statusText = 'Review';
+                                                break;
+                                            case 'disetujui':
+                                                $statusClass = 'badge bg-success';
+                                                $statusText = 'Disetujui';
+                                                break;
+                                            case 'perlu_revisi':
+                                                $statusClass = 'badge bg-danger';
+                                                $statusText = 'Perlu Revisi';
+                                                break;
+                                            default:
+                                                $statusClass = 'badge bg-secondary';
+                                                $statusText = ucfirst($item['status']);
+                                        }
                                         ?>
-                                        <span class="badge bg-<?= $statusClass ?>"><?= ucfirst($waste['status']) ?></span>
+                                        <span class="<?= $statusClass ?>"><?= $statusText ?></span>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
                     </div>
+                    <div class="text-center mt-3">
+                        <a href="<?= base_url('/pengelola-tps/waste') ?>" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> Lihat Semua Data
+                        </a>
+                    </div>
                 <?php else: ?>
                     <div class="empty-state">
                         <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">Belum ada data waste. Mulai dengan menginput data baru.</p>
+                        <p class="text-muted">Belum ada data waste management. Mulai dengan menginput data baru.</p>
                         <a href="<?= base_url('/pengelola-tps/waste') ?>" class="btn btn-primary">
                             <i class="fas fa-plus"></i> Input Data Pertama
                         </a>
@@ -207,49 +234,11 @@ if (!function_exists('formatNumber')) {
             </div>
         </div>
         <?php endif; ?>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
 
         <?php if (session()->getFlashdata('error')): ?>
         <div class="alert alert-danger">
             <i class="fas fa-exclamation-circle"></i>
             <?= session()->getFlashdata('error') ?>
-        </div>
-        <?php endif; ?>
-
-        <!-- Dynamic Widgets -->
-        <?php foreach ($widgets as $widgetData): ?>
-            <?php 
-            $widget = $widgetData['widget'];
-            $data = $widgetData['data'];
-            $widgetKey = $widget['widget_key'];
-            ?>
-            
-            <div class="widget-container" data-widget="<?= $widgetKey ?>" data-order="<?= $widget['urutan'] ?>">
-                <?php 
-                // Load widget view
-                $widgetViewPath = "dashboard/widgets/{$widgetKey}";
-                if (view_exists($widgetViewPath)) {
-                    echo view($widgetViewPath, compact('widget', 'data'));
-                } else {
-                    // Fallback for missing widget
-                    echo view('dashboard/widgets/fallback', compact('widget', 'data'));
-                }
-                ?>
-            </div>
-        <?php endforeach; ?>
-
-        <!-- Empty State -->
-        <?php if (empty($widgets)): ?>
-        <div class="card">
-            <div class="card-body text-center py-5">
-                <i class="fas fa-puzzle-piece fa-4x text-muted mb-3"></i>
-                <h4 class="text-muted">Dashboard Kosong</h4>
-                <p class="text-muted">Tidak ada widget yang aktif. Hubungi administrator untuk mengaktifkan widget dashboard.</p>
-            </div>
         </div>
         <?php endif; ?>
 
@@ -295,6 +284,8 @@ if (!function_exists('formatNumber')) {
             });
         });
     </script>
+    <!-- Mobile Menu JS -->
+    <script src="<?= base_url('/js/mobile-menu.js') ?>"></script>
 </body>
 </html>
 
@@ -379,6 +370,7 @@ body {
 
 .stat-card.primary { border-left-color: #007bff; }
 .stat-card.success { border-left-color: #28a745; }
+.stat-card.danger { border-left-color: #dc3545; }
 .stat-card.warning { border-left-color: #ffc107; }
 .stat-card.info { border-left-color: #17a2b8; }
 
@@ -396,8 +388,9 @@ body {
 
 .stat-card.primary .stat-icon { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
 .stat-card.success .stat-icon { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-.stat-card.warning .stat-icon { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-.stat-card.info .stat-icon { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+.stat-card.danger .stat-icon { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.stat-card.warning .stat-icon { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+.stat-card.info .stat-icon { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
 
 .stat-content {
     flex: 1;

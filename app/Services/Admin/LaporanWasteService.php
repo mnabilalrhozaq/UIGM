@@ -16,26 +16,32 @@ class LaporanWasteService
         $this->unitModel = new UnitModel();
     }
 
-    public function getLaporanData(array $filters): array
+    public function getLaporanData(array $filters, array $pages, int $perPage = 10): array
     {
         try {
             $db = \Config\Database::connect();
             
-            // Get data dari laporan_waste (bukan waste_management)
-            $dataDisetujui = $this->getDataByStatus('approved', $filters, $db);
-            $dataDitolak = $this->getDataByStatus('rejected', $filters, $db);
+            // Get data dari laporan_waste dengan pagination per section
+            $dataDisetujui = $this->getDataByStatus('approved', $filters, $db, $pages['disetujui'], $perPage);
+            $dataDitolak = $this->getDataByStatus('rejected', $filters, $db, $pages['ditolak'], $perPage);
             
-            // Rekap per jenis sampah
-            $rekapJenis = $this->getRekapPerJenis($filters, $db);
+            // Rekap per jenis sampah dengan pagination
+            $rekapJenis = $this->getRekapPerJenis($filters, $db, $pages['rekap_jenis'], $perPage);
             
-            // Rekap per unit
-            $rekapUnit = $this->getRekapPerUnit($filters, $db);
+            // Rekap per unit dengan pagination
+            $rekapUnit = $this->getRekapPerUnit($filters, $db, $pages['rekap_unit'], $perPage);
             
             // Get all units for filter
             $units = $this->unitModel->findAll();
             
             // Summary
             $summary = $this->getSummary($filters, $db);
+            
+            // Count totals for pagination
+            $totalDisetujui = $this->countDataByStatus('approved', $filters, $db);
+            $totalDitolak = $this->countDataByStatus('rejected', $filters, $db);
+            $totalRekapJenis = $this->countRekapPerJenis($filters, $db);
+            $totalRekapUnit = $this->countRekapPerUnit($filters, $db);
 
             return [
                 'data_disetujui' => $dataDisetujui,
@@ -43,7 +49,19 @@ class LaporanWasteService
                 'rekap_jenis' => $rekapJenis,
                 'rekap_unit' => $rekapUnit,
                 'units' => $units,
-                'summary' => $summary
+                'summary' => $summary,
+                'pagination' => [
+                    'pages' => $pages,
+                    'per_page' => $perPage,
+                    'total_disetujui' => $totalDisetujui,
+                    'total_ditolak' => $totalDitolak,
+                    'total_rekap_jenis' => $totalRekapJenis,
+                    'total_rekap_unit' => $totalRekapUnit,
+                    'total_pages_disetujui' => ceil($totalDisetujui / $perPage),
+                    'total_pages_ditolak' => ceil($totalDitolak / $perPage),
+                    'total_pages_rekap_jenis' => ceil($totalRekapJenis / $perPage),
+                    'total_pages_rekap_unit' => ceil($totalRekapUnit / $perPage)
+                ]
             ];
         } catch (\Exception $e) {
             log_message('error', 'Get Laporan Data Error: ' . $e->getMessage());
@@ -54,13 +72,27 @@ class LaporanWasteService
                 'rekap_jenis' => [],
                 'rekap_unit' => [],
                 'units' => [],
-                'summary' => []
+                'summary' => [],
+                'pagination' => [
+                    'pages' => ['disetujui' => 1, 'ditolak' => 1, 'rekap_jenis' => 1, 'rekap_unit' => 1],
+                    'per_page' => 10,
+                    'total_disetujui' => 0,
+                    'total_ditolak' => 0,
+                    'total_rekap_jenis' => 0,
+                    'total_rekap_unit' => 0,
+                    'total_pages_disetujui' => 0,
+                    'total_pages_ditolak' => 0,
+                    'total_pages_rekap_jenis' => 0,
+                    'total_pages_rekap_unit' => 0
+                ]
             ];
         }
     }
 
-    private function getDataByStatus(string $status, array $filters, $db): array
+    private function getDataByStatus(string $status, array $filters, $db, int $page = 1, int $perPage = 10): array
     {
+        $offset = ($page - 1) * $perPage;
+        
         // Query dari laporan_waste, bukan waste_management
         $builder = $db->table('laporan_waste')
             ->select('laporan_waste.*, units.nama_unit, users.nama_lengkap as created_by_name, reviewer.nama_lengkap as reviewed_by_name')
@@ -86,11 +118,40 @@ class LaporanWasteService
             $builder->where('laporan_waste.jenis_sampah', $filters['jenis_sampah']);
         }
 
-        return $builder->orderBy('laporan_waste.reviewed_at', 'DESC')->get()->getResultArray();
+        return $builder->orderBy('laporan_waste.reviewed_at', 'DESC')
+            ->limit($perPage, $offset)
+            ->get()
+            ->getResultArray();
+    }
+    
+    private function countDataByStatus(string $status, array $filters, $db): int
+    {
+        $builder = $db->table('laporan_waste')
+            ->where('status', $status);
+
+        if (!empty($filters['start_date'])) {
+            $builder->where('DATE(tanggal_input) >=', $filters['start_date']);
+        }
+        
+        if (!empty($filters['end_date'])) {
+            $builder->where('DATE(tanggal_input) <=', $filters['end_date']);
+        }
+        
+        if (!empty($filters['unit_id'])) {
+            $builder->where('unit_id', $filters['unit_id']);
+        }
+        
+        if (!empty($filters['jenis_sampah'])) {
+            $builder->where('jenis_sampah', $filters['jenis_sampah']);
+        }
+
+        return $builder->countAllResults();
     }
 
-    private function getRekapPerJenis(array $filters, $db): array
+    private function getRekapPerJenis(array $filters, $db, int $page = 1, int $perPage = 10): array
     {
+        $offset = ($page - 1) * $perPage;
+        
         $sql = "SELECT 
                     jenis_sampah,
                     COUNT(*) as total_transaksi,
@@ -120,14 +181,46 @@ class LaporanWasteService
             $params[] = $filters['unit_id'];
         }
         
-        $sql .= " GROUP BY jenis_sampah ORDER BY total_berat_disetujui DESC";
+        $sql .= " GROUP BY jenis_sampah ORDER BY total_berat_disetujui DESC LIMIT ? OFFSET ?";
+        $params[] = $perPage;
+        $params[] = $offset;
         
         $query = $db->query($sql, $params);
         return $query->getResultArray();
     }
-
-    private function getRekapPerUnit(array $filters, $db): array
+    
+    private function countRekapPerJenis(array $filters, $db): int
     {
+        $sql = "SELECT COUNT(DISTINCT jenis_sampah) as total
+                FROM laporan_waste
+                WHERE status IN ('approved', 'rejected')";
+        
+        $params = [];
+        
+        if (!empty($filters['start_date'])) {
+            $sql .= " AND DATE(tanggal_input) >= ?";
+            $params[] = $filters['start_date'];
+        }
+        
+        if (!empty($filters['end_date'])) {
+            $sql .= " AND DATE(tanggal_input) <= ?";
+            $params[] = $filters['end_date'];
+        }
+        
+        if (!empty($filters['unit_id'])) {
+            $sql .= " AND unit_id = ?";
+            $params[] = $filters['unit_id'];
+        }
+        
+        $query = $db->query($sql, $params);
+        $result = $query->getRow();
+        return $result ? (int)$result->total : 0;
+    }
+
+    private function getRekapPerUnit(array $filters, $db, int $page = 1, int $perPage = 10): array
+    {
+        $offset = ($page - 1) * $perPage;
+        
         $sql = "SELECT 
                     u.id as unit_id,
                     u.nama_unit,
@@ -163,10 +256,45 @@ class LaporanWasteService
             $sql .= " WHERE " . implode(' AND ', $whereConditions);
         }
         
-        $sql .= " GROUP BY u.id, u.nama_unit ORDER BY total_berat_disetujui DESC";
+        $sql .= " GROUP BY u.id, u.nama_unit ORDER BY total_berat_disetujui DESC LIMIT ? OFFSET ?";
+        $params[] = $perPage;
+        $params[] = $offset;
         
         $query = $db->query($sql, $params);
         return $query->getResultArray();
+    }
+    
+    private function countRekapPerUnit(array $filters, $db): int
+    {
+        $sql = "SELECT COUNT(DISTINCT u.id) as total
+                FROM unit u
+                LEFT JOIN laporan_waste lw ON lw.unit_id = u.id AND lw.status IN ('approved', 'rejected')";
+        
+        $params = [];
+        $whereConditions = [];
+        
+        if (!empty($filters['start_date'])) {
+            $whereConditions[] = "DATE(lw.tanggal_input) >= ?";
+            $params[] = $filters['start_date'];
+        }
+        
+        if (!empty($filters['end_date'])) {
+            $whereConditions[] = "DATE(lw.tanggal_input) <= ?";
+            $params[] = $filters['end_date'];
+        }
+        
+        if (!empty($filters['unit_id'])) {
+            $whereConditions[] = "u.id = ?";
+            $params[] = $filters['unit_id'];
+        }
+        
+        if (!empty($whereConditions)) {
+            $sql .= " WHERE " . implode(' AND ', $whereConditions);
+        }
+        
+        $query = $db->query($sql, $params);
+        $result = $query->getRow();
+        return $result ? (int)$result->total : 0;
     }
 
     private function getSummary(array $filters, $db): array
@@ -285,5 +413,66 @@ class LaporanWasteService
             log_message('error', 'Export Laporan Error: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Terjadi kesalahan saat export laporan'];
         }
+    }
+
+    public function exportPdf(array $filters): array
+    {
+        try {
+            // Untuk export PDF, ambil semua data tanpa pagination
+            // Set pages ke 1 dan perPage ke nilai besar untuk ambil semua data
+            $pages = [
+                'disetujui' => 1,
+                'ditolak' => 1,
+                'jenis' => 1,
+                'unit' => 1
+            ];
+            $perPage = 10000; // Ambil semua data
+            
+            $data = $this->getLaporanData($filters, $pages, $perPage);
+            
+            // Load view untuk PDF
+            $html = view('admin_pusat/laporan_waste_pdf_new', [
+                'data' => $data,
+                'filters' => $filters,
+                'generated_at' => date('d/m/Y H:i:s')
+            ]);
+
+            // Generate PDF menggunakan Dompdf
+            $options = new \Dompdf\Options();
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('isRemoteEnabled', true);
+            
+            $dompdf = new \Dompdf\Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'landscape');
+            $dompdf->render();
+
+            // Save to temp file
+            $filename = 'laporan_waste_' . date('Y-m-d_H-i-s') . '.pdf';
+            $filePath = WRITEPATH . 'uploads/' . $filename;
+            
+            if (!is_dir(WRITEPATH . 'uploads/')) {
+                mkdir(WRITEPATH . 'uploads/', 0755, true);
+            }
+            
+            file_put_contents($filePath, $dompdf->output());
+
+            return [
+                'success' => true,
+                'file_path' => $filePath,
+                'filename' => $filename
+            ];
+
+        } catch (\Exception $e) {
+            log_message('error', 'Export PDF Error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            return ['success' => false, 'message' => 'Terjadi kesalahan saat export PDF: ' . $e->getMessage()];
+        }
+    }
+
+    public function exportCsv(array $filters): array
+    {
+        // Sama dengan exportLaporan
+        return $this->exportLaporan($filters);
     }
 }

@@ -23,13 +23,28 @@ class Waste extends BaseController
 
             $data = $this->wasteService->getWasteData();
             
-            // Fallback: if categories empty, get directly from database
-            if (empty($data['categories'])) {
-                log_message('warning', 'User Waste - Categories empty from service, trying direct query');
-                $db = \Config\Database::connect();
-                $query = $db->query("SELECT * FROM master_harga_sampah WHERE status_aktif = 1 ORDER BY jenis_sampah ASC");
-                $data['categories'] = $query->getResultArray();
-                log_message('info', 'User Waste - Direct query got ' . count($data['categories']) . ' categories');
+            $hargaModel = new \App\Models\HargaSampahModel();
+            
+            // Pagination untuk categories (Informasi Harga Sampah - cards display)
+            $perPage = 5; // Maksimal 5 cards per halaman
+            $categories = $hargaModel->where('status_aktif', 1)
+                                    ->orderBy('jenis_sampah', 'ASC')
+                                    ->paginate($perPage, 'harga');
+            $pagerHarga = $hargaModel->pager;
+            
+            // Semua categories untuk dropdown form (tidak pakai pagination)
+            $allCategories = $hargaModel->where('status_aktif', 1)
+                                       ->orderBy('jenis_sampah', 'ASC')
+                                       ->findAll();
+            
+            // DEBUG: Log pagination info
+            log_message('info', 'User Waste - Categories (paginated): ' . count($categories));
+            log_message('info', 'User Waste - All Categories (dropdown): ' . count($allCategories));
+            log_message('info', 'User Waste - Pager exists: ' . (isset($pagerHarga) ? 'YES' : 'NO'));
+            if (isset($pagerHarga)) {
+                log_message('info', 'User Waste - Page count: ' . $pagerHarga->getPageCount('harga'));
+                log_message('info', 'User Waste - Current page: ' . $pagerHarga->getCurrentPage('harga'));
+                log_message('info', 'User Waste - Total: ' . $pagerHarga->getTotal('harga'));
             }
             
             $viewData = [
@@ -37,7 +52,9 @@ class Waste extends BaseController
                 'user' => $data['user'],
                 'unit' => $data['unit'],
                 'waste_list' => $data['waste_list'],
-                'categories' => $data['categories'],
+                'categories' => $categories, // Untuk cards (dengan pagination)
+                'allCategories' => $allCategories, // Untuk dropdown form (semua data)
+                'pagerHarga' => $pagerHarga,
                 'stats' => $data['stats']
             ];
 
@@ -50,7 +67,7 @@ class Waste extends BaseController
             $categories = [];
             try {
                 $db = \Config\Database::connect();
-                $query = $db->query("SELECT * FROM master_harga_sampah WHERE status_aktif = 1 ORDER BY jenis_sampah ASC");
+                $query = $db->query("SELECT * FROM master_harga_sampah WHERE status_aktif = 1 ORDER BY jenis_sampah ASC LIMIT 5");
                 $categories = $query->getResultArray();
             } catch (\Exception $dbError) {
                 log_message('error', 'User Waste - Even direct query failed: ' . $dbError->getMessage());
@@ -62,6 +79,8 @@ class Waste extends BaseController
                 'unit' => null,
                 'waste_list' => [],
                 'categories' => $categories,
+                'allCategories' => [], // Fallback kosong
+                'pagerHarga' => null,
                 'stats' => [],
                 'error' => 'Terjadi kesalahan saat memuat data sampah'
             ]);
@@ -326,13 +345,6 @@ class Waste extends BaseController
                 return redirect()->to('/auth/login');
             }
 
-            // Check if feature toggle function exists
-            if (function_exists('isFeatureEnabled')) {
-                if (!isFeatureEnabled('export_data', 'user')) {
-                    return redirect()->back()->with('error', 'Fitur export tidak tersedia');
-                }
-            }
-
             $result = $this->wasteService->exportWaste();
             
             if ($result['success']) {
@@ -344,6 +356,27 @@ class Waste extends BaseController
         } catch (\Exception $e) {
             log_message('error', 'User Waste Export Error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Terjadi kesalahan saat export data');
+        }
+    }
+    
+    public function exportPdf()
+    {
+        try {
+            if (!$this->validateSession()) {
+                return redirect()->to('/auth/login');
+            }
+
+            $result = $this->wasteService->exportPdf();
+            
+            if ($result['success']) {
+                return $this->response->download($result['file_path'], null)->setFileName($result['filename']);
+            }
+
+            return redirect()->back()->with('error', $result['message']);
+
+        } catch (\Exception $e) {
+            log_message('error', 'User Waste Export PDF Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat export PDF');
         }
     }
 

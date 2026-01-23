@@ -38,6 +38,8 @@ class DashboardService
                 'user' => $user,
                 'tps_info' => $tpsInfo,
                 'stats' => $this->getStats($tpsId),
+                'wasteOverallStats' => $this->getWasteOverallStats($tpsId),
+                'wasteManagementSummary' => $this->getWasteManagementSummary($tpsId),
                 'recent_waste' => $this->getRecentWaste($tpsId),
                 'monthly_summary' => $this->getMonthlySummary($tpsId)
             ];
@@ -53,6 +55,8 @@ class DashboardService
                     'id' => $user['unit_id'] ?? 0
                 ],
                 'stats' => $this->getDefaultStats(),
+                'wasteOverallStats' => [],
+                'wasteManagementSummary' => [],
                 'recent_waste' => [],
                 'monthly_summary' => []
             ];
@@ -138,5 +142,58 @@ class DashboardService
             'total_weight_today' => 0,
             'total_weight_month' => 0
         ];
+    }
+    
+    private function getWasteOverallStats(int $tpsId): array
+    {
+        try {
+            $db = \Config\Database::connect();
+            
+            return [
+                'disetujui' => $db->table('waste_management')
+                    ->where('unit_id', $tpsId)
+                    ->where('status', 'disetujui')
+                    ->countAllResults(),
+                'ditolak' => $db->table('laporan_waste')
+                    ->where('unit_id', $tpsId)
+                    ->where('status', 'rejected')
+                    ->countAllResults(),
+                'menunggu_review' => $db->table('waste_management')
+                    ->where('unit_id', $tpsId)
+                    ->where('status', 'dikirim')
+                    ->countAllResults(),
+                'draft' => $db->table('waste_management')
+                    ->where('unit_id', $tpsId)
+                    ->where('status', 'draft')
+                    ->countAllResults()
+            ];
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting waste overall stats: ' . $e->getMessage());
+            return ['disetujui' => 0, 'ditolak' => 0, 'menunggu_review' => 0, 'draft' => 0];
+        }
+    }
+    
+    private function getWasteManagementSummary(int $tpsId): array
+    {
+        try {
+            $db = \Config\Database::connect();
+            
+            // Get recent waste data (read-only, no CRUD)
+            $query = $db->query("
+                SELECT 
+                    wm.*,
+                    u.nama_unit
+                FROM waste_management wm
+                LEFT JOIN unit u ON u.id = wm.unit_id
+                WHERE wm.unit_id = ?
+                ORDER BY wm.created_at DESC
+                LIMIT 10
+            ", [$tpsId]);
+            
+            return $query->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting waste management summary: ' . $e->getMessage());
+            return [];
+        }
     }
 }

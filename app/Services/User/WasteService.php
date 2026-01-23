@@ -284,6 +284,81 @@ class WasteService
             return ['success' => false, 'message' => 'Terjadi kesalahan saat export data'];
         }
     }
+    
+    public function exportPdf(): array
+    {
+        try {
+            $user = session()->get('user');
+            $unitId = $user['unit_id'];
+            $unit = $this->unitModel->find($unitId);
+
+            $wasteList = $this->getWasteList($unitId);
+            
+            if (empty($wasteList)) {
+                return ['success' => false, 'message' => 'Tidak ada data untuk diekspor'];
+            }
+
+            // Calculate statistics
+            $totalBerat = 0;
+            $totalNilai = 0;
+            $statusCount = ['draft' => 0, 'dikirim' => 0, 'review' => 0, 'disetujui' => 0, 'perlu_revisi' => 0];
+            
+            foreach ($wasteList as $waste) {
+                $totalBerat += $waste['berat_kg'];
+                $totalNilai += $waste['nilai_rupiah'] ?? 0;
+                $status = $waste['status'] ?? 'draft';
+                if (isset($statusCount[$status])) {
+                    $statusCount[$status]++;
+                }
+            }
+
+            // Prepare data for PDF
+            $data = [
+                'title' => 'Laporan Data Sampah',
+                'unit' => $unit,
+                'user' => $user,
+                'waste_list' => $wasteList,
+                'total_berat' => $totalBerat,
+                'total_nilai' => $totalNilai,
+                'status_count' => $statusCount,
+                'generated_at' => date('d/m/Y H:i:s')
+            ];
+
+            // Generate HTML for PDF
+            $html = view('user/waste_pdf', $data);
+
+            // Generate PDF using Dompdf
+            $options = new \Dompdf\Options();
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('isRemoteEnabled', true);
+            
+            $dompdf = new \Dompdf\Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            // Save to temp file
+            $filename = 'waste_export_' . $user['unit_id'] . '_' . date('Y-m-d_H-i-s') . '.pdf';
+            $filePath = WRITEPATH . 'uploads/' . $filename;
+            
+            if (!is_dir(WRITEPATH . 'uploads/')) {
+                mkdir(WRITEPATH . 'uploads/', 0755, true);
+            }
+            
+            file_put_contents($filePath, $dompdf->output());
+
+            return [
+                'success' => true,
+                'file_path' => $filePath,
+                'filename' => $filename
+            ];
+
+        } catch (\Exception $e) {
+            log_message('error', 'Export PDF User Waste Error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            return ['success' => false, 'message' => 'Terjadi kesalahan saat export PDF: ' . $e->getMessage()];
+        }
+    }
 
     private function getWasteList(int $unitId): array
     {

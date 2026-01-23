@@ -16,70 +16,68 @@ class Harga extends BaseController
 
     public function index()
     {
+        // DEBUG: Log to detect if method is called twice
+        $requestId = uniqid('REQ-', true);
+        log_message('critical', "=== HARGA INDEX CALLED === Request ID: {$requestId} | URL: " . current_url() . " | Method: " . $this->request->getMethod());
+        
         try {
             if (!$this->validateSession()) {
                 return redirect()->to('/auth/login');
             }
 
-            // Get data from database directly
-            $hargaModel = new \App\Models\HargaSampahModel();
-            $allHarga = $hargaModel->findAll();
-            $hargaList = $hargaModel->where('status_aktif', 1)->findAll();
+            // Get statistics from DashboardService (single call)
+            $dashboardService = new \App\Services\Admin\DashboardService();
+            $statsData = $dashboardService->getManajemenSampahStats();
             
-            // Get log statistics (with error handling)
-            $logChangesToday = 0;
-            $logChangesTotal = 0;
+            // Get recent price changes DIRECTLY from HargaLogModel (bypass DashboardService)
             $recentChanges = [];
-            
             try {
-                $logModel = new \App\Models\HargaLogModel();
-                $today = date('Y-m-d');
-                $logChangesToday = $logModel->where('DATE(created_at)', $today)->countAllResults();
-                $logChangesTotal = $logModel->countAllResults();
-                
-                if (method_exists($logModel, 'getRecentChanges')) {
-                    $recentChanges = $logModel->getRecentChanges(5);
-                }
+                $hargaLogModel = new \App\Models\HargaLogModel();
+                $recentChanges = $hargaLogModel->getRecentChanges(5);
+                log_message('critical', "HargaController: Recent changes retrieved - Count: " . count($recentChanges) . " | Data: " . json_encode($recentChanges));
             } catch (\Exception $logError) {
-                log_message('warning', 'Harga Log Model Error: ' . $logError->getMessage());
+                log_message('error', 'HargaController: Failed to get recent changes: ' . $logError->getMessage());
             }
             
-            // Calculate statistics
-            $totalHarga = count($allHarga);
-            $activeHarga = count($hargaList);
-            $inactiveHarga = $totalHarga - $activeHarga;
-            $sellableHarga = 0;
+            // Standardize to 'statistics' for view compatibility
+            $statistics = [
+                'total' => $statsData['total_jenis_sampah'] ?? 0,
+                'aktif' => $statsData['harga_aktif'] ?? 0,
+                'bisa_dijual' => $statsData['bisa_dijual'] ?? 0,
+                'perubahan_hari_ini' => $statsData['perubahan_count'] ?? 0,
+                'perubahan_total' => $statsData['perubahan_total'] ?? 0
+            ];
             
-            foreach ($allHarga as $harga) {
-                if ($harga['dapat_dijual']) {
-                    $sellableHarga++;
-                }
+            // Get paginated harga list - TAMPILKAN SEMUA (aktif + nonaktif)
+            $hargaModel = new \App\Models\HargaSampahModel();
+            $perPage = 10; // 10 items per page
+            
+            // Filter berdasarkan status (dari query string)
+            $statusFilter = $this->request->getGet('status');
+            if ($statusFilter === 'aktif') {
+                $hargaModel->where('status_aktif', 1);
+            } elseif ($statusFilter === 'nonaktif') {
+                $hargaModel->where('status_aktif', 0);
             }
+            // Jika tidak ada filter atau 'semua', tampilkan semua
+            
+            $hargaList = $hargaModel->orderBy('status_aktif', 'DESC')->orderBy('jenis_sampah', 'ASC')->paginate($perPage);
+            $pager = $hargaModel->pager;
+            
+            log_message('critical', 'HargaController: Sending to view - recentChanges count: ' . count($recentChanges) . " | Request ID: {$requestId}");
             
             $viewData = [
                 'title' => 'Manajemen Sampah',
-                'harga_list' => $hargaList,
-                'hargaSampah' => $hargaList, // Alias untuk view
-                'statistics' => [
-                    'total' => $totalHarga,
-                    'active' => $activeHarga,
-                    'aktif' => $activeHarga,
-                    'inactive' => $inactiveHarga,
-                    'tidak_aktif' => $inactiveHarga,
-                    'sellable' => $sellableHarga,
-                    'dapat_dijual' => $sellableHarga,
-                    'bisa_dijual' => $sellableHarga,
-                    'last_updated' => date('Y-m-d H:i:s')
-                ],
-                'logStatistics' => [
-                    'changes_today' => $logChangesToday,
-                    'changes_total' => $logChangesTotal,
-                    'last_change' => date('Y-m-d H:i:s')
-                ],
-                'recentChanges' => $recentChanges,
-                'categories' => []
+                'hargaSampah' => $hargaList,
+                'pager' => $pager,
+                'statistics' => $statistics,
+                'recentChanges' => $recentChanges, // Direct from HargaLogModel
+                'recentChangesCount' => count($recentChanges),
+                'categories' => [],
+                'requestId' => $requestId // Add request ID to view
             ];
 
+            log_message('critical', "HargaController: About to return view | Request ID: {$requestId}");
             return view('admin_pusat/manajemen_harga/index', $viewData);
 
         } catch (\Exception $e) {
@@ -87,27 +85,72 @@ class Harga extends BaseController
             
             return view('admin_pusat/manajemen_harga/index', [
                 'title' => 'Manajemen Sampah',
-                'harga_list' => [],
                 'hargaSampah' => [],
+                'pager' => null,
                 'statistics' => [
                     'total' => 0,
-                    'active' => 0,
                     'aktif' => 0,
-                    'inactive' => 0,
-                    'tidak_aktif' => 0,
-                    'sellable' => 0,
-                    'dapat_dijual' => 0,
                     'bisa_dijual' => 0,
-                    'last_updated' => date('Y-m-d H:i:s')
-                ],
-                'logStatistics' => [
-                    'changes_today' => 0,
-                    'changes_total' => 0,
-                    'last_change' => date('Y-m-d H:i:s')
+                    'perubahan_hari_ini' => 0,
+                    'perubahan_total' => 0
                 ],
                 'recentChanges' => [],
+                'recentChangesCount' => 0,
                 'categories' => [],
                 'error' => 'Terjadi kesalahan saat memuat data harga: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function testSimple()
+    {
+        // DEBUG: Test simple view without complex layout
+        $requestId = uniqid('TEST-', true);
+        log_message('critical', "=== HARGA TEST SIMPLE CALLED === Request ID: {$requestId}");
+        
+        try {
+            if (!$this->validateSession()) {
+                return redirect()->to('/auth/login');
+            }
+
+            // Get statistics
+            $dashboardService = new \App\Services\Admin\DashboardService();
+            $statsData = $dashboardService->getManajemenSampahStats();
+            
+            // Get recent changes
+            $recentChanges = [];
+            try {
+                $hargaLogModel = new \App\Models\HargaLogModel();
+                $recentChanges = $hargaLogModel->getRecentChanges(5);
+                log_message('critical', "TEST SIMPLE: Recent changes count: " . count($recentChanges));
+            } catch (\Exception $logError) {
+                log_message('error', 'TEST SIMPLE: Failed to get recent changes: ' . $logError->getMessage());
+            }
+            
+            $statistics = [
+                'total' => $statsData['total_jenis_sampah'] ?? 0,
+                'aktif' => $statsData['harga_aktif'] ?? 0,
+                'bisa_dijual' => $statsData['bisa_dijual'] ?? 0,
+                'perubahan_hari_ini' => $statsData['perubahan_count'] ?? 0
+            ];
+            
+            $viewData = [
+                'requestId' => $requestId,
+                'statistics' => $statistics,
+                'recentChanges' => $recentChanges
+            ];
+
+            log_message('critical', "TEST SIMPLE: About to return view | Request ID: {$requestId}");
+            return view('admin_pusat/manajemen_harga/test_simple', $viewData);
+
+        } catch (\Exception $e) {
+            log_message('error', 'TEST SIMPLE Error: ' . $e->getMessage());
+            
+            return view('admin_pusat/manajemen_harga/test_simple', [
+                'requestId' => $requestId,
+                'statistics' => ['total' => 0, 'aktif' => 0, 'bisa_dijual' => 0, 'perubahan_hari_ini' => 0],
+                'recentChanges' => [],
+                'error' => $e->getMessage()
             ]);
         }
     }
@@ -397,37 +440,17 @@ class Harga extends BaseController
                 return redirect()->to('/auth/login');
             }
 
-            // Get logs from database
-            $logModel = new \App\Models\HargaLogModel();
-            $logs = $logModel->getRecentChanges(100); // Get more logs
+            // Get logs from ChangeLogModel
+            $changeLogModel = new \App\Models\ChangeLogModel();
+            $logs = $changeLogModel->getByEntity('harga_sampah', null, 100);
             
-            // Calculate statistics
-            $today = date('Y-m-d');
-            $weekStart = date('Y-m-d', strtotime('-7 days'));
-            
-            $todayLogs = 0;
-            $weekLogs = 0;
-            
-            foreach ($logs as $log) {
-                $logDate = date('Y-m-d', strtotime($log['created_at']));
-                
-                if ($logDate === $today) {
-                    $todayLogs++;
-                }
-                
-                if ($logDate >= $weekStart) {
-                    $weekLogs++;
-                }
-            }
+            // Get statistics
+            $stats = $changeLogModel->getStatistics();
             
             $viewData = [
                 'title' => 'Log Perubahan Harga',
                 'logs' => $logs,
-                'stats' => [
-                    'total_logs' => count($logs),
-                    'today_logs' => $todayLogs,
-                    'week_logs' => $weekLogs
-                ]
+                'stats' => $stats
             ];
 
             return view('admin_pusat/manajemen_harga/logs', $viewData);
@@ -439,11 +462,44 @@ class Harga extends BaseController
                 'title' => 'Log Perubahan Harga',
                 'logs' => [],
                 'stats' => [
-                    'total_logs' => 0,
-                    'today_logs' => 0,
-                    'week_logs' => 0
+                    'total' => 0,
+                    'today' => 0,
+                    'this_week' => 0,
+                    'this_month' => 0
                 ],
                 'error' => 'Terjadi kesalahan saat memuat log'
+            ]);
+        }
+    }
+
+    /**
+     * Get recent changes as JSON (for AJAX polling)
+     */
+    public function recentChanges()
+    {
+        try {
+            if (!$this->validateSession()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+            }
+
+            $changeLogModel = new \App\Models\ChangeLogModel();
+            $recentChanges = $changeLogModel->getByEntity('harga_sampah', null, 5);
+            $stats = $changeLogModel->getStatistics();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'count' => count($recentChanges),
+                'today_count' => $stats['today'] ?? 0,
+                'total_count' => $stats['total'] ?? 0,
+                'changes' => $recentChanges
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Admin Harga Recent Changes Error: ' . $e->getMessage());
+            
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil data'
             ]);
         }
     }

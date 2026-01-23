@@ -79,10 +79,10 @@ class Kriteria extends BaseController
                 ]
             ],
             'jenis_sampah' => [
-                'rules' => 'required|in_list[Kertas,Plastik,Organik,Anorganik,Limbah Cair,B3]',
+                'rules' => 'required|max_length[100]',
                 'errors' => [
                     'required' => 'Jenis sampah harus dipilih.',
-                    'in_list' => 'Jenis sampah tidak valid.'
+                    'max_length' => 'Jenis sampah maksimal 100 karakter.'
                 ]
             ],
             'satuan' => [
@@ -192,18 +192,47 @@ class Kriteria extends BaseController
     }
 
     /**
-     * Opsi jenis sampah
+     * Opsi jenis sampah - Ambil dari master_harga_sampah
      */
     private function getJenisSampahOptions(): array
     {
-        return [
-            'Kertas' => 'Kertas',
-            'Plastik' => 'Plastik',
-            'Organik' => 'Organik',
-            'Anorganik' => 'Anorganik',
-            'Limbah Cair' => 'Limbah Cair',
-            'B3' => 'B3 (Bahan Berbahaya dan Beracun)'
-        ];
+        try {
+            $hargaModel = new \App\Models\HargaSampahModel();
+            $hargaList = $hargaModel->where('status_aktif', 1)->findAll();
+            
+            $options = [];
+            foreach ($hargaList as $harga) {
+                // Gunakan nama_jenis sebagai label, jenis_sampah sebagai value
+                $options[$harga['nama_jenis']] = $harga['nama_jenis'] . ' (' . $harga['jenis_sampah'] . ')';
+            }
+            
+            // Fallback jika tidak ada data
+            if (empty($options)) {
+                return [
+                    'Kertas' => 'Kertas',
+                    'Plastik' => 'Plastik',
+                    'Organik' => 'Organik',
+                    'Anorganik' => 'Anorganik',
+                    'Limbah Cair' => 'Limbah Cair',
+                    'B3' => 'B3 (Bahan Berbahaya dan Beracun)'
+                ];
+            }
+            
+            return $options;
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting jenis sampah options: ' . $e->getMessage());
+            
+            // Fallback ke hardcoded list
+            return [
+                'Kertas' => 'Kertas',
+                'Plastik' => 'Plastik',
+                'Organik' => 'Organik',
+                'Anorganik' => 'Anorganik',
+                'Limbah Cair' => 'Limbah Cair',
+                'B3' => 'B3 (Bahan Berbahaya dan Beracun)'
+            ];
+        }
     }
 
     /**

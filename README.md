@@ -1,127 +1,277 @@
-# Waste Management System
+# UI GreenMetric POLBAN - Waste Management System
 
-Sistem manajemen sampah berbasis web menggunakan CodeIgniter 4 dengan fitur multi-role dan security enhancement.
+Sistem Manajemen Sampah untuk UI GreenMetric Politeknik Negeri Bandung
 
-## 🚀 Quick Start
+## 📋 Deskripsi
 
-### Requirements
-- PHP 8.0+
-- MySQL 5.7+
+Aplikasi web untuk mengelola data sampah di lingkungan Politeknik Negeri Bandung sebagai bagian dari program UI GreenMetric. Sistem ini memungkinkan berbagai unit untuk mencatat, melaporkan, dan memantau pengelolaan sampah secara digital.
+
+## 🚀 Fitur Utama
+
+### Admin Pusat
+- Dashboard monitoring seluruh unit
+- Manajemen harga sampah
+- Review dan approval data sampah dari unit
+- Laporan dan statistik komprehensif
+- Export data ke PDF/Excel
+
+### Pengelola TPS
+- Input data sampah TPS
+- Monitoring data sampah unit
+- Export laporan TPS
+
+### User (Unit)
+- Input data sampah unit
+- Tracking status approval
+- Melihat informasi harga sampah
+- Export laporan unit
+
+## 🛠️ Teknologi
+
+- **Framework**: CodeIgniter 4.6.4
+- **PHP**: 7.4 atau lebih tinggi
+- **Database**: MySQL 8.0+
+- **Frontend**: Bootstrap 5, Font Awesome 6
+- **Library**: TCPDF (untuk export PDF)
+
+## 📦 Instalasi
+
+### Prasyarat
+
+- PHP 7.4 atau lebih tinggi dengan ekstensi:
+  - intl
+  - mbstring
+  - json
+  - mysqlnd
+- MySQL 8.0 atau lebih tinggi
 - Composer
-- Apache/Nginx
+- Web server (Apache/Nginx) atau Laragon/XAMPP
 
-### Installation
+### Langkah Instalasi
+
+1. **Clone repository**
+   ```bash
+   git clone https://github.com/username/uigm-polban.git
+   cd uigm-polban
+   ```
+
+2. **Install dependencies**
+   ```bash
+   composer install
+   ```
+
+3. **Konfigurasi environment**
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Edit file `.env` dan sesuaikan konfigurasi database:
+   ```env
+   database.default.hostname = localhost
+   database.default.database = eksperimen
+   database.default.username = root
+   database.default.password = 
+   database.default.port = 3306
+   ```
+
+4. **Import database**
+   
+   Import file SQL yang ada di folder `database/`:
+   ```bash
+   mysql -u root -p eksperimen < database/eksperimen.sql
+   ```
+   
+   Atau gunakan phpMyAdmin untuk import database.
+
+5. **Set permissions**
+   
+   Pastikan folder `writable` memiliki permission yang tepat:
+   ```bash
+   chmod -R 777 writable/
+   ```
+
+6. **Jalankan aplikasi**
+   
+   Menggunakan PHP built-in server:
+   ```bash
+   php spark serve
+   ```
+   
+   Atau akses melalui web server di:
+   ```
+   http://localhost/eksperimen/public
+   ```
+
+## 👥 Default User Accounts
+
+Setelah import database, gunakan akun berikut untuk login:
+
+### Admin Pusat
+- **Username**: `admin`
+- **Password**: `admin123`
+
+### Pengelola TPS
+- **Username**: `tps1`
+- **Password**: `tps123`
+
+### User (Unit)
+- **Username**: `user1`
+- **Password**: `user123`
+
+⚠️ **PENTING**: Ganti password default setelah login pertama kali!
+
+## 📁 Struktur Project
+
+```
+eksperimen/
+├── app/
+│   ├── Controllers/      # Controller untuk routing
+│   ├── Models/          # Model untuk database
+│   ├── Services/        # Business logic layer
+│   ├── Views/           # Template views
+│   └── Config/          # Konfigurasi aplikasi
+├── public/              # Public assets (CSS, JS, images)
+├── writable/            # Cache, logs, uploads
+├── database/            # SQL files dan migrations
+├── vendor/              # Composer dependencies
+└── .env                 # Environment configuration (jangan di-commit!)
+```
+
+## 🔧 Konfigurasi
+
+### Database
+
+Struktur database utama:
+- `users` - Data pengguna sistem
+- `units` - Data unit/fakultas
+- `master_harga_sampah` - Master data harga sampah
+- `waste_management` - Data transaksi sampah
+- `log_perubahan_harga` - Log perubahan harga
+
+### Environment Variables
+
+Konfigurasi penting di `.env`:
+- `CI_ENVIRONMENT` - Mode aplikasi (development/production)
+- `database.*` - Konfigurasi database
+- `app.baseURL` - Base URL aplikasi
+
+## 📝 Penggunaan
+
+### Workflow Sistem
+
+1. **Admin Pusat** mengatur master data harga sampah
+2. **User/TPS** menginput data sampah sesuai unit masing-masing
+3. Data sampah masuk ke status "dikirim" untuk review
+4. **Admin Pusat** melakukan review dan approval
+5. Data yang disetujui masuk ke laporan dan statistik
+
+### Fitur Pagination
+
+Sistem menggunakan pagination untuk:
+- Daftar harga sampah (5 items per halaman)
+- Manajemen harga admin (10 items per halaman dengan filter)
+- Data sampah per unit
+
+### Export Data
+
+Tersedia export ke format:
+- **PDF** - Untuk laporan formal
+- **Excel** - Untuk analisis data
+
+## 🐛 Troubleshooting
+
+### Error: "Table not found"
+
+Pastikan database sudah di-import dengan benar:
 ```bash
-# Clone repository
-git clone [repository-url]
+mysql -u root -p eksperimen < database/eksperimen.sql
+```
 
-# Install dependencies
-composer install
+### Error: "Permission denied" pada folder writable
 
-# Setup environment
-cp .env.example .env
-
-# Configure database di .env
-database.default.hostname = localhost
-database.default.database = eksperimen
-database.default.username = root
-database.default.password = 
-
-# Import database
-mysql -u root eksperimen < database/quick_import.sql
-
-# Set permissions
+Set permission yang tepat:
+```bash
 chmod -R 777 writable/
 ```
 
-### Access
-- **URL**: `http://localhost/eksperimen`
-- **Admin Pusat**: admin / admin123
-- **User**: userjti / user123
-- **Pengelola TPS**: pengelolatps / password123
+### Pagination tidak muncul
 
-## 🛡️ Security Features
+Pastikan data lebih dari limit per halaman (5 atau 10 items).
 
-Sistem dilengkapi dengan enterprise-grade security:
-- ✅ Enhanced Session Security (timeout, regeneration, hijacking detection)
-- ✅ Input Validation & Sanitization (XSS, SQL injection protection)
-- ✅ Rate Limiting (login, API, brute force prevention)
-- ✅ Enhanced Authentication & Access Control
-- ✅ Security Headers Protection
-- ✅ Comprehensive Security Logging
-- ✅ Full IPv6 Support
+### Error 404 pada routing
 
-Detail: [README_SECURITY_IMPLEMENTATION.md](README_SECURITY_IMPLEMENTATION.md)
+Pastikan `.htaccess` ada di folder `public/` dan mod_rewrite Apache aktif.
 
-## 📁 Structure
+## 🔐 Security
 
-```
-app/
-├── Controllers/        # Application controllers
-│   ├── AdminPusat/    # Admin central controllers
-│   ├── User/          # User controllers
-│   └── Auth.php       # Authentication
-├── Models/            # Database models
-├── Views/             # View templates
-├── Filters/           # Security filters
-├── Libraries/         # Custom libraries
-└── Config/            # Configuration files
+- Password di-hash menggunakan PHP `password_hash()`
+- CSRF protection aktif
+- Session management dengan timeout
+- Input validation dan sanitization
+- SQL injection protection via Query Builder
 
-database/              # Database files
-public/               # Public assets
-writable/             # Logs & cache
-```
+⚠️ **Untuk Production**:
+- Ganti semua password default
+- Set `CI_ENVIRONMENT = production` di `.env`
+- Aktifkan HTTPS
+- Backup database secara berkala
+- Monitor log files di `writable/logs/`
 
-## 🔑 User Roles
+## 📊 Database Backup
 
-1. **Admin Pusat**: Manajemen sistem, harga, review data
-2. **User**: Input data sampah per unit
-3. **Pengelola TPS**: Manajemen data TPS
-4. **Super Admin**: Full system access
-
-## 📊 Features
-
-- Multi-role authentication & authorization
-- Dashboard dinamis per role
-- Waste management (CRUD)
-- Price management
-- Data review & approval
-- Feature toggle system
-- Security event logging
-- Export data (Excel, PDF)
-
-## 🔧 Development
-
+Backup database secara manual:
 ```bash
-# Run development server
-php spark serve
-
-# Clear cache
-php spark cache:clear
-
-# Run migrations
-php spark migrate
-
-# Run tests
-./vendor/bin/phpunit
+mysqldump -u root -p eksperimen > backup_$(date +%Y%m%d).sql
 ```
 
-## 📝 Documentation
-
-- [Security Implementation](README_SECURITY_IMPLEMENTATION.md)
-- [Changelog](CHANGELOG.md)
-- [Contributing](CONTRIBUTING.md)
-
-## 📄 License
-
-[LICENSE](LICENSE)
+Atau gunakan script backup yang tersedia di folder `scripts/`.
 
 ## 🤝 Contributing
 
-Lihat [CONTRIBUTING.md](CONTRIBUTING.md) untuk panduan kontribusi.
+Jika ingin berkontribusi:
+1. Fork repository
+2. Buat branch baru (`git checkout -b feature/AmazingFeature`)
+3. Commit perubahan (`git commit -m 'Add some AmazingFeature'`)
+4. Push ke branch (`git push origin feature/AmazingFeature`)
+5. Buat Pull Request
+
+## 📄 License
+
+Project ini dibuat untuk keperluan internal Politeknik Negeri Bandung.
+
+## 📞 Kontak
+
+Untuk pertanyaan atau dukungan, hubungi:
+- Email: admin@polban.ac.id
+- Website: https://www.polban.ac.id
+
+## 📚 Dokumentasi Tambahan
+
+Dokumentasi lengkap tersedia di folder `docs/`:
+- Setup Guide
+- User Manual
+- API Documentation
+- Database Schema
+
+## 🔄 Changelog
+
+Lihat file `CHANGELOG.md` untuk riwayat perubahan.
+
+## ✅ Testing
+
+Jalankan test suite:
+```bash
+composer test
+```
+
+## 🙏 Acknowledgments
+
+- CodeIgniter 4 Framework
+- Bootstrap 5
+- Font Awesome
+- TCPDF Library
+- Politeknik Negeri Bandung
 
 ---
 
-**Version**: 2.0.0  
-**Last Updated**: January 2026  
-**Status**: Production Ready ✅
+**Dibuat dengan ❤️ untuk UI GreenMetric POLBAN**

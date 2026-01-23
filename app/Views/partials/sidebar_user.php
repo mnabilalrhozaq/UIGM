@@ -2,7 +2,7 @@
     <div class="sidebar-header">
         <div class="logo">
             <i class="fas fa-recycle"></i>
-            <span>TPS System</span>
+            <span>User System</span>
         </div>
     </div>
     
@@ -35,6 +35,17 @@
                     <a href="<?= base_url('/user/waste') ?>" class="<?= (strpos(uri_string(), 'user/waste') === 0) ? 'active' : '' ?>">
                         <i class="fas fa-trash-alt"></i>
                         <span>Data Sampah</span>
+                    </a>
+                </li>
+                
+                <li class="nav-section">
+                    <span>Akun</span>
+                </li>
+                
+                <li>
+                    <a href="<?= base_url('/user/profile') ?>" class="<?= (strpos(uri_string(), 'user/profile') === 0) ? 'active' : '' ?>">
+                        <i class="fas fa-user-circle"></i>
+                        <span>Edit Profil</span>
                     </a>
                 </li>
             </ul>
@@ -224,16 +235,5 @@
 
 .sidebar-content::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.5);
-}
-
-@media (max-width: 768px) {
-    .sidebar {
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
-    }
-    
-    .sidebar.show {
-        transform: translateX(0);
-    }
 }
 </style>

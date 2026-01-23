@@ -20,6 +20,8 @@ if (!function_exists('formatCurrency')) {
     <title><?= $title ?? 'Laporan Waste' ?></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Mobile Responsive CSS -->
+    <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
     <?= $this->include('partials/sidebar_admin_pusat') ?>
@@ -140,8 +142,8 @@ if (!function_exists('formatCurrency')) {
 
         <!-- Export Button -->
         <div class="mb-3">
-            <a href="<?= base_url('/admin-pusat/laporan-waste/export?' . http_build_query($filters)) ?>" class="btn btn-success">
-                <i class="fas fa-download"></i> Export ke CSV
+            <a href="<?= base_url('/admin-pusat/laporan-waste/export-pdf?' . http_build_query($filters)) ?>" class="btn btn-danger" target="_blank">
+                <i class="fas fa-file-pdf"></i> Export ke PDF
             </a>
         </div>
 
@@ -182,6 +184,36 @@ if (!function_exists('formatCurrency')) {
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Pagination Rekap Jenis -->
+                <?php if (isset($pagination) && $pagination['total_pages_rekap_jenis'] > 1): ?>
+                <nav aria-label="Pagination Rekap Jenis">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item <?= $pagination['pages']['rekap_jenis'] <= 1 ? 'disabled' : '' ?>">
+                            <a class="page-link" href="?page=<?= $pagination['pages']['rekap_jenis'] - 1 ?>&section=rekap_jenis&<?= http_build_query($filters) ?>">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </a>
+                        </li>
+                        
+                        <?php for ($i = 1; $i <= $pagination['total_pages_rekap_jenis']; $i++): ?>
+                        <li class="page-item <?= $i == $pagination['pages']['rekap_jenis'] ? 'active' : '' ?>">
+                            <a class="page-link" href="?page=<?= $i ?>&section=rekap_jenis&<?= http_build_query($filters) ?>"><?= $i ?></a>
+                        </li>
+                        <?php endfor; ?>
+                        
+                        <li class="page-item <?= $pagination['pages']['rekap_jenis'] >= $pagination['total_pages_rekap_jenis'] ? 'disabled' : '' ?>">
+                            <a class="page-link" href="?page=<?= $pagination['pages']['rekap_jenis'] + 1 ?>&section=rekap_jenis&<?= http_build_query($filters) ?>">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="text-center text-muted">
+                        <small>Halaman <?= $pagination['pages']['rekap_jenis'] ?> dari <?= $pagination['total_pages_rekap_jenis'] ?> 
+                        (Total: <?= $pagination['total_rekap_jenis'] ?> jenis sampah)</small>
+                    </div>
+                </nav>
+                <?php endif; ?>
+                
                 <?php else: ?>
                 <div class="text-center py-5">
                     <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
@@ -228,6 +260,36 @@ if (!function_exists('formatCurrency')) {
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Pagination Rekap Unit -->
+                <?php if (isset($pagination) && $pagination['total_pages_rekap_unit'] > 1): ?>
+                <nav aria-label="Pagination Rekap Unit">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item <?= $pagination['pages']['rekap_unit'] <= 1 ? 'disabled' : '' ?>">
+                            <a class="page-link" href="?page=<?= $pagination['pages']['rekap_unit'] - 1 ?>&section=rekap_unit&<?= http_build_query($filters) ?>">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </a>
+                        </li>
+                        
+                        <?php for ($i = 1; $i <= $pagination['total_pages_rekap_unit']; $i++): ?>
+                        <li class="page-item <?= $i == $pagination['pages']['rekap_unit'] ? 'active' : '' ?>">
+                            <a class="page-link" href="?page=<?= $i ?>&section=rekap_unit&<?= http_build_query($filters) ?>"><?= $i ?></a>
+                        </li>
+                        <?php endfor; ?>
+                        
+                        <li class="page-item <?= $pagination['pages']['rekap_unit'] >= $pagination['total_pages_rekap_unit'] ? 'disabled' : '' ?>">
+                            <a class="page-link" href="?page=<?= $pagination['pages']['rekap_unit'] + 1 ?>&section=rekap_unit&<?= http_build_query($filters) ?>">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="text-center text-muted">
+                        <small>Halaman <?= $pagination['pages']['rekap_unit'] ?> dari <?= $pagination['total_pages_rekap_unit'] ?> 
+                        (Total: <?= $pagination['total_rekap_unit'] ?> unit)</small>
+                    </div>
+                </nav>
+                <?php endif; ?>
+                
                 <?php else: ?>
                 <div class="text-center py-5">
                     <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
@@ -243,12 +305,12 @@ if (!function_exists('formatCurrency')) {
                 <ul class="nav nav-tabs card-header-tabs" role="tablist">
                     <li class="nav-item">
                         <a class="nav-link active" data-bs-toggle="tab" href="#disetujui">
-                            <i class="fas fa-check-circle text-success"></i> Data Disetujui (<?= count($data_disetujui) ?>)
+                            <i class="fas fa-check-circle text-success"></i> Data Disetujui (<?= $pagination['total_disetujui'] ?? 0 ?>)
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" data-bs-toggle="tab" href="#ditolak">
-                            <i class="fas fa-times-circle text-danger"></i> Data Ditolak (<?= count($data_ditolak) ?>)
+                            <i class="fas fa-times-circle text-danger"></i> Data Ditolak (<?= $pagination['total_ditolak'] ?? 0 ?>)
                         </a>
                     </li>
                 </ul>
@@ -284,6 +346,36 @@ if (!function_exists('formatCurrency')) {
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <!-- Pagination Data Disetujui -->
+                        <?php if (isset($pagination) && $pagination['total_pages_disetujui'] > 1): ?>
+                        <nav aria-label="Pagination Data Disetujui">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item <?= $pagination['pages']['disetujui'] <= 1 ? 'disabled' : '' ?>">
+                                    <a class="page-link" href="?page=<?= $pagination['pages']['disetujui'] - 1 ?>&section=disetujui&<?= http_build_query($filters) ?>">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </a>
+                                </li>
+                                
+                                <?php for ($i = 1; $i <= $pagination['total_pages_disetujui']; $i++): ?>
+                                <li class="page-item <?= $i == $pagination['pages']['disetujui'] ? 'active' : '' ?>">
+                                    <a class="page-link" href="?page=<?= $i ?>&section=disetujui&<?= http_build_query($filters) ?>"><?= $i ?></a>
+                                </li>
+                                <?php endfor; ?>
+                                
+                                <li class="page-item <?= $pagination['pages']['disetujui'] >= $pagination['total_pages_disetujui'] ? 'disabled' : '' ?>">
+                                    <a class="page-link" href="?page=<?= $pagination['pages']['disetujui'] + 1 ?>&section=disetujui&<?= http_build_query($filters) ?>">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                            <div class="text-center text-muted">
+                                <small>Halaman <?= $pagination['pages']['disetujui'] ?> dari <?= $pagination['total_pages_disetujui'] ?> 
+                                (Total: <?= $pagination['total_disetujui'] ?> data)</small>
+                            </div>
+                        </nav>
+                        <?php endif; ?>
+                        
                         <?php else: ?>
                         <div class="text-center py-5">
                             <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
@@ -321,6 +413,36 @@ if (!function_exists('formatCurrency')) {
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <!-- Pagination Data Ditolak -->
+                        <?php if (isset($pagination) && $pagination['total_pages_ditolak'] > 1): ?>
+                        <nav aria-label="Pagination Data Ditolak">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item <?= $pagination['pages']['ditolak'] <= 1 ? 'disabled' : '' ?>">
+                                    <a class="page-link" href="?page=<?= $pagination['pages']['ditolak'] - 1 ?>&section=ditolak&<?= http_build_query($filters) ?>">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </a>
+                                </li>
+                                
+                                <?php for ($i = 1; $i <= $pagination['total_pages_ditolak']; $i++): ?>
+                                <li class="page-item <?= $i == $pagination['pages']['ditolak'] ? 'active' : '' ?>">
+                                    <a class="page-link" href="?page=<?= $i ?>&section=ditolak&<?= http_build_query($filters) ?>"><?= $i ?></a>
+                                </li>
+                                <?php endfor; ?>
+                                
+                                <li class="page-item <?= $pagination['pages']['ditolak'] >= $pagination['total_pages_ditolak'] ? 'disabled' : '' ?>">
+                                    <a class="page-link" href="?page=<?= $pagination['pages']['ditolak'] + 1 ?>&section=ditolak&<?= http_build_query($filters) ?>">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                            <div class="text-center text-muted">
+                                <small>Halaman <?= $pagination['pages']['ditolak'] ?> dari <?= $pagination['total_pages_ditolak'] ?> 
+                                (Total: <?= $pagination['total_ditolak'] ?> data)</small>
+                            </div>
+                        </nav>
+                        <?php endif; ?>
+                        
                         <?php else: ?>
                         <div class="text-center py-5">
                             <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
@@ -334,6 +456,8 @@ if (!function_exists('formatCurrency')) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Mobile Menu JS -->
+    <script src="<?= base_url('/js/mobile-menu.js') ?>"></script>
 </body>
 </html>
 
@@ -423,10 +547,50 @@ body {
     background: #f8f9fa;
 }
 
+.pagination {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.pagination .page-link {
+    color: #2c3e50;
+    border: 1px solid #dee2e6;
+    padding: 8px 12px;
+    margin: 0 2px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.pagination .page-link:hover {
+    background: #e9ecef;
+    border-color: #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    background: #fff;
+    border-color: #dee2e6;
+}
+
 @media (max-width: 768px) {
     .main-content {
         margin-left: 0;
         padding: 20px;
+    }
+    
+    .pagination {
+        flex-wrap: wrap;
+    }
+    
+    .pagination .page-item {
+        margin-bottom: 5px;
     }
 }
 </style>

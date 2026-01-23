@@ -32,6 +32,8 @@ helper('feature');
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="<?= base_url('assets/css/dashboard.css') ?>" rel="stylesheet">
+    <!-- Mobile Responsive CSS -->
+    <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
     <?= $this->include('partials/sidebar_user') ?>
@@ -81,12 +83,12 @@ helper('feature');
             </div>
             
             <div class="stat-card">
-                <div class="stat-icon orange">
-                    <i class="fas fa-edit"></i>
+                <div class="stat-icon red">
+                    <i class="fas fa-times-circle"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?= displayStat($wasteOverallStats, 'perlu_revisi') ?></h3>
-                    <p>Perlu Revisi</p>
+                    <h3><?= displayStat($wasteOverallStats, 'ditolak') ?></h3>
+                    <p>Data Ditolak</p>
                 </div>
             </div>
             
@@ -95,7 +97,7 @@ helper('feature');
                     <i class="fas fa-paper-plane"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?= displayStat($wasteOverallStats, 'dikirim') ?></h3>
+                    <h3><?= displayStat($wasteOverallStats, 'menunggu_review') ?></h3>
                     <p>Menunggu Review</p>
                 </div>
             </div>
@@ -129,50 +131,83 @@ helper('feature');
                     <a href="<?= base_url('/user/waste') ?>" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus"></i> Input Data
                     </a>
-                    <a href="<?= base_url('/user/waste/export') ?>" class="btn btn-success btn-sm">
-                        <i class="fas fa-download"></i> Export
+                    <?php if (isFeatureEnabled('export_data', 'user')): ?>
+                    <a href="<?= base_url('/user/waste/export-pdf') ?>" class="btn btn-danger btn-sm" target="_blank">
+                        <i class="fas fa-file-pdf"></i> Export PDF
                     </a>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="card-body">
-                <div class="waste-grid">
-                    <?php if (!empty($wasteStats)): ?>
-                        <?php foreach ($wasteStats as $jenis => $stats): ?>
-                        <div class="waste-item">
-                            <div class="waste-header">
-                                <h5><?= $jenis ?></h5>
-                                <span class="waste-total"><?= $stats['total'] ?> data</span>
-                            </div>
-                            
-                            <div class="waste-stats">
-                                <div class="waste-stat">
-                                    <span class="stat-label">Disetujui</span>
-                                    <span class="stat-value text-success"><?= $stats['disetujui'] ?></span>
-                                </div>
-                                <div class="waste-stat">
-                                    <span class="stat-label">Revisi</span>
-                                    <span class="stat-value text-warning"><?= $stats['perlu_revisi'] ?></span>
-                                </div>
-                                <div class="waste-stat">
-                                    <span class="stat-label">Draft</span>
-                                    <span class="stat-value text-muted"><?= $stats['draft'] ?></span>
-                                </div>
-                            </div>
-                            
-                            <a href="<?= base_url('/user/waste/' . urlencode($jenis)) ?>" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-eye"></i> Lihat Data
-                            </a>
-                        </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="col-12">
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i>
-                                Belum ada data waste management. Mulai dengan menginput data baru.
-                            </div>
-                        </div>
-                    <?php endif; ?>
+                <?php if (!empty($wasteManagementSummary)): ?>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Jenis Sampah</th>
+                                <th>Berat (kg)</th>
+                                <th>Satuan</th>
+                                <th>Nilai (Rp)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($wasteManagementSummary as $item): ?>
+                            <tr>
+                                <td><?= date('d/m/Y', strtotime($item['created_at'])) ?></td>
+                                <td><?= esc($item['jenis_sampah']) ?></td>
+                                <td><?= number_format($item['berat_kg'], 2) ?></td>
+                                <td><?= esc($item['satuan'] ?? 'kg') ?></td>
+                                <td><?= number_format($item['nilai_rupiah'] ?? 0, 0, ',', '.') ?></td>
+                                <td>
+                                    <?php
+                                    $statusClass = '';
+                                    $statusText = '';
+                                    switch($item['status']) {
+                                        case 'draft':
+                                            $statusClass = 'badge bg-secondary';
+                                            $statusText = 'Draft';
+                                            break;
+                                        case 'dikirim':
+                                            $statusClass = 'badge bg-info';
+                                            $statusText = 'Dikirim';
+                                            break;
+                                        case 'review':
+                                            $statusClass = 'badge bg-warning';
+                                            $statusText = 'Review';
+                                            break;
+                                        case 'disetujui':
+                                            $statusClass = 'badge bg-success';
+                                            $statusText = 'Disetujui';
+                                            break;
+                                        case 'perlu_revisi':
+                                            $statusClass = 'badge bg-danger';
+                                            $statusText = 'Perlu Revisi';
+                                            break;
+                                        default:
+                                            $statusClass = 'badge bg-secondary';
+                                            $statusText = ucfirst($item['status']);
+                                    }
+                                    ?>
+                                    <span class="<?= $statusClass ?>"><?= $statusText ?></span>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
+                <div class="text-center mt-3">
+                    <a href="<?= base_url('/user/waste') ?>" class="btn btn-outline-primary">
+                        <i class="fas fa-list"></i> Lihat Semua Data
+                    </a>
+                </div>
+                <?php else: ?>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Belum ada data waste management. Mulai dengan menginput data baru.
+                </div>
+                <?php endif; ?>
             </div>
         </div>
         <?php else: ?>
@@ -268,6 +303,8 @@ helper('feature');
         }
     </script>
     <?php endif; ?>
+    <!-- Mobile Menu JS -->
+    <script src="<?= base_url('/js/mobile-menu.js') ?>"></script>
 </body>
 </html>
 
@@ -343,7 +380,7 @@ body {
 }
 
 .stat-icon.green { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-.stat-icon.orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+.stat-icon.red { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
 .stat-icon.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
 .stat-icon.purple { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
 

@@ -19,7 +19,7 @@ class WasteService
         $this->unitModel = new UnitModel();
     }
 
-    public function getWasteData(): array
+    public function getWasteData(int $page = 1, int $perPage = 10): array
     {
         try {
             log_message('info', 'Admin - Starting getWasteData...');
@@ -37,10 +37,11 @@ class WasteService
             }
             
             return [
-                'waste_list' => $this->getWasteList(),
+                'waste_list' => $this->getWasteList($page, $perPage),
                 'summary' => $this->getWasteSummary(),
                 'filters' => $this->getFilterOptions(),
-                'statistics' => $this->getWasteStatistics()
+                'statistics' => $this->getWasteStatistics(),
+                'pager' => $this->wasteModel->pager
             ];
         } catch (\Exception $e) {
             log_message('error', 'Admin Waste Service Error: ' . $e->getMessage());
@@ -50,7 +51,8 @@ class WasteService
                 'waste_list' => [],
                 'summary' => $this->getDefaultSummary(),
                 'filters' => [],
-                'statistics' => []
+                'statistics' => [],
+                'pager' => null
             ];
         }
     }
@@ -244,7 +246,7 @@ class WasteService
         }
     }
 
-    private function getWasteList(): array
+    private function getWasteList(int $page = 1, int $perPage = 10): array
     {
         try {
             log_message('info', 'Admin - Getting waste list with unit names...');
@@ -263,16 +265,19 @@ class WasteService
                 ->getResultArray();
             log_message('info', 'Admin - Status breakdown: ' . json_encode($statusQuery));
             
-            // Query utama - tanpa filter dulu untuk testing
+            // Calculate offset
+            $offset = ($page - 1) * $perPage;
+            
+            // Query utama dengan pagination
             $result = $db->table('waste_management')
                 ->select('waste_management.*, unit.nama_unit')
                 ->join('unit', 'unit.id = waste_management.unit_id', 'left')
                 ->orderBy('waste_management.created_at', 'DESC')
-                ->limit(100)
+                ->limit($perPage, $offset)
                 ->get()
                 ->getResultArray();
             
-            log_message('info', 'Admin - Query found ' . count($result) . ' records (no filter)');
+            log_message('info', 'Admin - Query found ' . count($result) . ' records (page ' . $page . ')');
             
             if (!empty($result)) {
                 log_message('info', 'Admin - First record: ' . json_encode($result[0]));

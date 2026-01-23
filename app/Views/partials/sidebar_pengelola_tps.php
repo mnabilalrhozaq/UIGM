@@ -37,6 +37,17 @@
                         <span>Data Sampah</span>
                     </a>
                 </li>
+                
+                <li class="nav-section">
+                    <span>Akun</span>
+                </li>
+                
+                <li>
+                    <a href="<?= base_url('/pengelola-tps/profile') ?>" class="<?= (strpos(uri_string(), 'pengelola-tps/profile') === 0) ? 'active' : '' ?>">
+                        <i class="fas fa-user-circle"></i>
+                        <span>Edit Profil</span>
+                    </a>
+                </li>
             </ul>
         </nav>
     </div>
@@ -224,16 +235,5 @@
 
 .sidebar-content::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.5);
-}
-
-@media (max-width: 768px) {
-    .sidebar {
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
-    }
-    
-    .sidebar.show {
-        transform: translateX(0);
-    }
 }
 </style>

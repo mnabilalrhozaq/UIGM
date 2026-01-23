@@ -150,6 +150,45 @@ class HargaSampahModel extends Model
     }
 
     /**
+     * Count all waste types
+     */
+    public function countAllTypes(): int
+    {
+        try {
+            return $this->countAllResults(false);
+        } catch (\Exception $e) {
+            log_message('error', 'HargaSampahModel countAllTypes error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Count active prices
+     */
+    public function countActivePrices(): int
+    {
+        try {
+            return $this->where('status_aktif', 1)->countAllResults(false);
+        } catch (\Exception $e) {
+            log_message('error', 'HargaSampahModel countActivePrices error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Count sellable waste types
+     */
+    public function countSellable(): int
+    {
+        try {
+            return $this->where('dapat_dijual', 1)->where('status_aktif', 1)->countAllResults(false);
+        } catch (\Exception $e) {
+            log_message('error', 'HargaSampahModel countSellable error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
      * Update price
      */
     public function updateHarga(int $id, float $hargaBaru): bool

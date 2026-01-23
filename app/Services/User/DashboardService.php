@@ -32,7 +32,10 @@ class DashboardService
                 'user' => $user,
                 'unit' => $unit,
                 'stats' => $this->getWasteStats($unitId),
-                'recent_activities' => $this->getRecentActivities($user['id']),
+                'wasteOverallStats' => $this->getWasteOverallStats($unitId),
+                'wasteStats' => $this->getWasteStatsByType($unitId),
+                'wasteManagementSummary' => $this->getWasteManagementSummary($unitId),
+                'recent_activities' => $this->getRecentActivities($user['id'], $unitId),
                 'feature_data' => $this->getFeatureData()
             ];
         } catch (\Exception $e) {
@@ -42,6 +45,9 @@ class DashboardService
                 'user' => session()->get('user'),
                 'unit' => null,
                 'stats' => $this->getDefaultStats(),
+                'wasteOverallStats' => [],
+                'wasteStats' => [],
+                'wasteManagementSummary' => [],
                 'recent_activities' => [],
                 'feature_data' => []
             ];
@@ -121,7 +127,7 @@ class DashboardService
         ];
     }
 
-    private function getRecentActivities(int $userId): array
+    private function getRecentActivities(int $userId, int $unitId): array
     {
         if (!isFeatureEnabled('dashboard_recent_activity', 'user')) {
             return [];
@@ -131,7 +137,7 @@ class DashboardService
             $maxItems = 5; // Default limit
             
             $recentWaste = $this->wasteModel
-                ->where('waste_management.unit_id', $user['unit_id'])
+                ->where('waste_management.unit_id', $unitId)
                 ->orderBy('waste_management.updated_at', 'DESC')
                 ->limit($maxItems)
                 ->findAll();
@@ -149,6 +155,98 @@ class DashboardService
             
         } catch (\Exception $e) {
             log_message('error', 'Error getting recent activities: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    private function getWasteOverallStats(int $unitId): array
+    {
+        try {
+            $db = \Config\Database::connect();
+            
+            return [
+                'disetujui' => $db->table('waste_management')
+                    ->where('unit_id', $unitId)
+                    ->where('status', 'disetujui')
+                    ->countAllResults(),
+                'ditolak' => $db->table('laporan_waste')
+                    ->where('unit_id', $unitId)
+                    ->where('status', 'rejected')
+                    ->countAllResults(),
+                'menunggu_review' => $db->table('waste_management')
+                    ->where('unit_id', $unitId)
+                    ->where('status', 'dikirim')
+                    ->countAllResults(),
+                'draft' => $db->table('waste_management')
+                    ->where('unit_id', $unitId)
+                    ->where('status', 'draft')
+                    ->countAllResults()
+            ];
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting waste overall stats: ' . $e->getMessage());
+            return ['disetujui' => 0, 'ditolak' => 0, 'menunggu_review' => 0, 'draft' => 0];
+        }
+    }
+    
+    private function getWasteStatsByType(int $unitId): array
+    {
+        try {
+            $db = \Config\Database::connect();
+            
+            $query = $db->query("
+                SELECT 
+                    jenis_sampah,
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = 'disetujui' THEN 1 ELSE 0 END) as disetujui,
+                    SUM(CASE WHEN status = 'perlu_revisi' THEN 1 ELSE 0 END) as perlu_revisi,
+                    SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) as draft,
+                    SUM(CASE WHEN status = 'dikirim' THEN 1 ELSE 0 END) as dikirim
+                FROM waste_management
+                WHERE unit_id = ?
+                GROUP BY jenis_sampah
+                ORDER BY total DESC
+            ", [$unitId]);
+            
+            $results = $query->getResultArray();
+            $stats = [];
+            
+            foreach ($results as $row) {
+                $stats[$row['jenis_sampah']] = [
+                    'total' => $row['total'],
+                    'disetujui' => $row['disetujui'],
+                    'perlu_revisi' => $row['perlu_revisi'],
+                    'draft' => $row['draft'],
+                    'dikirim' => $row['dikirim']
+                ];
+            }
+            
+            return $stats;
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting waste stats by type: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    private function getWasteManagementSummary(int $unitId): array
+    {
+        try {
+            $db = \Config\Database::connect();
+            
+            // Get recent waste data (read-only, no CRUD)
+            $query = $db->query("
+                SELECT 
+                    wm.*,
+                    u.nama_unit
+                FROM waste_management wm
+                LEFT JOIN unit u ON u.id = wm.unit_id
+                WHERE wm.unit_id = ?
+                ORDER BY wm.created_at DESC
+                LIMIT 10
+            ", [$unitId]);
+            
+            return $query->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting waste management summary: ' . $e->getMessage());
             return [];
         }
     }

@@ -33,6 +33,8 @@ class Dashboard extends BaseController
                 'user' => $data['user'],
                 'tps_info' => $data['tps_info'],
                 'stats' => $data['stats'],
+                'wasteOverallStats' => $data['wasteOverallStats'] ?? [],
+                'wasteManagementSummary' => $data['wasteManagementSummary'] ?? [],
                 'recent_waste' => $data['recent_waste'] ?? [],
                 'monthly_summary' => $data['monthly_summary'] ?? [],
                 'widgets' => []
@@ -53,6 +55,8 @@ class Dashboard extends BaseController
                     'total_weight_today' => 0,
                     'total_weight_month' => 0
                 ],
+                'wasteOverallStats' => [],
+                'wasteManagementSummary' => [],
                 'recent_waste' => [],
                 'monthly_summary' => [],
                 'widgets' => [],

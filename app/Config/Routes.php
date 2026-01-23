@@ -50,6 +50,12 @@ $routes->group('user', ['filter' => 'role:user'], function ($routes) {
     $routes->post('waste/delete/(:num)', 'User\\Waste::delete/$1'); // Changed from DELETE to POST
     $routes->delete('waste/delete/(:num)', 'User\\Waste::delete/$1'); // Keep DELETE for backward compatibility
     $routes->get('waste/export', 'User\\Waste::export');
+    $routes->get('waste/export-pdf', 'User\\Waste::exportPdf');
+    
+    // Profile
+    $routes->get('profile', 'User\\Profile::index');
+    $routes->post('profile/update', 'User\\Profile::update');
+    $routes->post('profile/change-password', 'User\\Profile::changePassword');
     
     // Dashboard API
     $routes->get('dashboard/api-stats', 'User\\Dashboard::apiStats');
@@ -71,6 +77,12 @@ $routes->group('pengelola-tps', ['filter' => 'role:pengelola_tps'], function ($r
     $routes->post('waste/delete/(:num)', 'TPS\\Waste::delete/$1'); // Changed from DELETE to POST
     $routes->delete('waste/delete/(:num)', 'TPS\\Waste::delete/$1'); // Keep DELETE for backward compatibility
     $routes->get('waste/export', 'TPS\\Waste::export');
+    $routes->get('waste/export-pdf', 'TPS\\Waste::exportPdf');
+    
+    // Profile
+    $routes->get('profile', 'TPS\\Profile::index');
+    $routes->post('profile/update', 'TPS\\Profile::update');
+    $routes->post('profile/change-password', 'TPS\\Profile::changePassword');
 });
 
 // ================================================

@@ -1,0 +1,112 @@
+INSTRUKSI DEBUG UNTUK DOUBLE CONTENT ISSUE
+==========================================
+
+MASALAH:
+- Content di halaman Manajemen Harga muncul 2x (duplikat)
+- MARKER muncul 2x di View Page Source (Ctrl+U)
+- Perubahan Terbaru tidak menampilkan data (count = 0)
+
+PERBAIKAN YANG SUDAH DILAKUKAN:
+1. ✅ Fixed DashboardService::getManajemenSampahStats() - sekarang menggunakan HargaLogModel bukan ChangeLogModel
+2. ✅ Controller sudah bypass DashboardService dan langsung pakai HargaLogModel::getRecentChanges()
+
+LANGKAH DEBUG SELANJUTNYA:
+==========================
+
+STEP 1: Tambahkan logging di Controller untuk cek apakah index() dipanggil 2x
+---------------------------------------------------------------------
+Buka file: app/Controllers/Admin/Harga.php
+
+Di awal method index(), tambahkan:
+```php
+public function index()
+{
+    // DEBUG: Log setiap kali method dipanggil
+    $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+    log_message('critical', '=== HARGA INDEX CALLED === Backtrace: ' . json_encode($backtrace));
+    
+    try {
+        // ... kode selanjutnya
+```
+
+STEP 2: Cek log file
+---------------------
+Buka: writable/logs/log-2026-01-21.php (atau tanggal hari ini)
+Cari: "HARGA INDEX CALLED"
+Jika muncul 2x untuk 1 request = controller dipanggil 2x
+
+STEP 3: Tambahkan unique ID di view untuk tracking
+---------------------------------------------------
+Di view, ganti MARKER dengan:
+```php
+<!-- MARKER: <?= uniqid('STATS-', true) ?> -->
+```
+
+Reload halaman, View Source, cek apakah ada 2 unique ID berbeda.
+- Jika 2 ID berbeda = view di-render 2x
+- Jika 2 ID sama = browser/cache yang duplikat
+
+STEP 4: Cek apakah ada echo/print di controller
+------------------------------------------------
+Pastikan di controller TIDAK ADA:
+- echo
+- print
+- var_dump
+- print_r
+Yang bisa menyebabkan output ganda
+
+STEP 5: Test dengan view minimal
+---------------------------------
+Buat file test: app/Views/admin_pusat/manajemen_harga/test_minimal.php
+```php
+<!DOCTYPE html>
+<html>
+<head><title>Test Minimal</title></head>
+<body>
+    <h1>TEST MINIMAL - <?= uniqid() ?></h1>
+    <p>Jika ini muncul 2x, masalahnya di controller/routing</p>
+</body>
+</html>
+```
+
+Di controller, ganti return view dengan:
+```php
+return view('admin_pusat/manajemen_harga/test_minimal');
+```
+
+Jika test_minimal juga duplikat = masalah di controller/routing
+Jika test_minimal OK = masalah di view index.php
+
+STEP 6: Cek apakah ada middleware/filter yang render ulang
+-----------------------------------------------------------
+Cek file: app/Config/Filters.php
+Pastikan tidak ada filter yang melakukan output di after()
+
+KEMUNGKINAN PENYEBAB:
+=====================
+1. Controller index() dipanggil 2x (cek dengan logging)
+2. View di-include 2x di dalam view itu sendiri (cek dengan search "include")
+3. Ada JavaScript yang clone/duplicate DOM (cek dengan disable JS)
+4. Browser cache yang rusak (sudah dicoba clear, masih duplikat)
+5. Middleware/Filter yang render ulang (jarang terjadi)
+6. Ada route yang overlap/duplicate (sudah dicek, tidak ada)
+
+UNTUK PERUBAHAN TERBARU TIDAK MUNCUL:
+======================================
+Sudah diperbaiki di DashboardService.php - sekarang menggunakan HargaLogModel.
+
+Tapi controller sudah bypass service dan langsung pakai:
+```php
+$hargaLogModel = new \App\Models\HargaLogModel();
+$recentChanges = $hargaLogModel->getRecentChanges(5);
+```
+
+Jika masih count = 0, cek:
+1. Apakah $recentChanges benar-benar berisi data? (tambahkan log_message)
+2. Apakah data sampai ke view? (tambahkan var_dump di view)
+3. Apakah ada error di query? (cek writable/logs)
+
+NEXT ACTION:
+============
+Jalankan STEP 1 dan STEP 2 dulu untuk confirm apakah controller dipanggil 2x.
+Laporkan hasilnya.

@@ -2,115 +2,402 @@
 
 namespace App\Services\Admin;
 
+use App\Models\HargaSampahModel;
+use App\Models\ChangeLogModel;
 use App\Models\WasteModel;
 use App\Models\UserModel;
-use App\Models\HargaSampahModel;
 
 class DashboardService
 {
+    protected $hargaModel;
+    protected $changeLogModel;
     protected $wasteModel;
     protected $userModel;
-    protected $hargaModel;
+    protected $hargaLogModel;
 
     public function __construct()
     {
+        $this->hargaModel = new HargaSampahModel();
+        $this->changeLogModel = new ChangeLogModel();
         $this->wasteModel = new WasteModel();
         $this->userModel = new UserModel();
-        $this->hargaModel = new HargaSampahModel();
+        
+        // Load HargaLogModel if exists
+        if (class_exists('\App\Models\HargaLogModel')) {
+            $this->hargaLogModel = new \App\Models\HargaLogModel();
+        }
     }
 
-    public function getDashboardData(): array
+    /**
+     * Get Dashboard Data (Main method for Admin Dashboard Controller)
+     * Returns all data needed for admin dashboard in one call
+     * 
+     * @param int $page Current page for waste by type pagination
+     * @param int $perPage Items per page
+     * @return array
+     */
+    public function getDashboardData(int $page = 1, int $perPage = 4): array
     {
         try {
-            return [
-                'stats' => $this->getStats(),
-                'recentSubmissions' => $this->getRecentSubmissions(),
-                'recentPriceChanges' => $this->getRecentPriceChanges(),
-                'wasteByType' => $this->getWasteByType()
-            ];
-        } catch (\Exception $e) {
-            log_message('error', 'Dashboard Service Error: ' . $e->getMessage());
+            // 1. Get main statistics
+            $stats = $this->getMainStatistics();
             
+            // 2. Get recent submissions (pending review)
+            $recentSubmissions = $this->getRecentSubmissions(5);
+            
+            // 3. Get recent price changes
+            $recentPriceChanges = $this->getRecentPriceChanges(5);
+            
+            // 4. Get waste by type with pagination
+            $wasteByTypeData = $this->getWasteByTypePaginated($page, $perPage);
+
             return [
-                'stats' => $this->getDefaultStats(),
+                'stats' => $stats,
+                'recentSubmissions' => $recentSubmissions,
+                'recentPriceChanges' => $recentPriceChanges,
+                'wasteByType' => $wasteByTypeData['data'],
+                'pager' => $wasteByTypeData['pager'],
+                'totalPages' => $wasteByTypeData['totalPages'],
+                'totalItems' => $wasteByTypeData['totalItems']
+            ];
+
+        } catch (\Exception $e) {
+            log_message('error', 'DashboardService getDashboardData error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            
+            // Return safe fallback data
+            return [
+                'stats' => [
+                    'total_users' => 0,
+                    'menunggu_review' => 0,
+                    'disetujui' => 0,
+                    'perlu_revisi' => 0,
+                    'total_berat' => 0,
+                    'total_nilai' => 0
+                ],
                 'recentSubmissions' => [],
                 'recentPriceChanges' => [],
-                'wasteByType' => []
+                'wasteByType' => [],
+                'pager' => null,
+                'totalPages' => 0,
+                'totalItems' => 0
             ];
         }
     }
 
-    private function getStats(): array
+    /**
+     * Get main statistics for dashboard
+     * 
+     * @return array
+     */
+    private function getMainStatistics(): array
     {
-        $today = date('Y-m-d');
-        $thisMonth = date('Y-m');
+        try {
+            // Count users
+            $totalUsers = $this->userModel->countAllResults(false);
+            
+            // Count submissions by status
+            $menungguReview = $this->wasteModel->where('status', 'dikirim')->countAllResults(false);
+            $disetujui = $this->wasteModel->where('status', 'disetujui')->countAllResults(false);
+            $perluRevisi = $this->wasteModel->where('status', 'perlu_revisi')->countAllResults(false);
+            
+            // Calculate total weight and value (approved only)
+            $approvedWaste = $this->wasteModel
+                ->select('SUM(berat) as total_berat, SUM(nilai_total) as total_nilai')
+                ->where('status', 'disetujui')
+                ->first();
+            
+            $totalBerat = $approvedWaste['total_berat'] ?? 0;
+            $totalNilai = $approvedWaste['total_nilai'] ?? 0;
 
-        return [
-            'total_users' => $this->userModel->where('status_aktif', 1)->countAllResults(),
-            'menunggu_review' => $this->wasteModel->where('status', 'pending')->countAllResults(),
-            'disetujui' => $this->wasteModel->where('status', 'approved')->countAllResults(),
-            'perlu_revisi' => $this->wasteModel->where('status', 'rejected')->countAllResults(),
-            'total_berat' => $this->wasteModel
-                ->selectSum('berat_kg')
-                ->where('status', 'approved')
-                ->get()
-                ->getRow()
-                ->berat_kg ?? 0,
-            'total_nilai' => $this->calculateTotalValue()
-        ];
+            return [
+                'total_users' => $totalUsers,
+                'menunggu_review' => $menungguReview,
+                'disetujui' => $disetujui,
+                'perlu_revisi' => $perluRevisi,
+                'total_berat' => (float)$totalBerat,
+                'total_nilai' => (float)$totalNilai
+            ];
+
+        } catch (\Exception $e) {
+            log_message('error', 'DashboardService getMainStatistics error: ' . $e->getMessage());
+            
+            return [
+                'total_users' => 0,
+                'menunggu_review' => 0,
+                'disetujui' => 0,
+                'perlu_revisi' => 0,
+                'total_berat' => 0,
+                'total_nilai' => 0
+            ];
+        }
     }
 
-    private function getRecentSubmissions(): array
+    /**
+     * Get recent submissions (pending review)
+     * 
+     * @param int $limit Number of items to retrieve
+     * @return array
+     */
+    private function getRecentSubmissions(int $limit = 5): array
     {
-        return $this->wasteModel
-            ->where('waste_management.status', 'pending')
-            ->orderBy('waste_management.created_at', 'DESC')
-            ->limit(5)
-            ->findAll();
+        try {
+            $submissions = $this->wasteModel
+                ->select('waste_management.*, users.nama_lengkap as user_name, users.username, users.role')
+                ->join('users', 'users.id = waste_management.user_id', 'left')
+                ->where('waste_management.status', 'dikirim')
+                ->orderBy('waste_management.created_at', 'DESC')
+                ->limit($limit)
+                ->findAll();
+
+            return $submissions;
+
+        } catch (\Exception $e) {
+            log_message('error', 'DashboardService getRecentSubmissions error: ' . $e->getMessage());
+            return [];
+        }
     }
 
-    private function getRecentPriceChanges(): array
+    /**
+     * Get recent price changes
+     * 
+     * @param int $limit Number of items to retrieve
+     * @return array
+     */
+    private function getRecentPriceChanges(int $limit = 5): array
     {
-        $logModel = new \App\Models\HargaLogModel();
-        
-        return $logModel
-            ->select('harga_log.*, master_harga_sampah.jenis_sampah, users.nama_lengkap as admin_nama')
-            ->join('master_harga_sampah', 'master_harga_sampah.id = harga_log.harga_id', 'left')
-            ->join('users', 'users.id = harga_log.admin_id', 'left')
-            ->orderBy('harga_log.created_at', 'DESC')
-            ->limit(5)
-            ->findAll();
+        try {
+            // Try to get from ChangeLogModel first (new system)
+            if ($this->changeLogModel) {
+                $changes = $this->changeLogModel->getByEntity('harga_sampah', null, $limit);
+                if (!empty($changes)) {
+                    return $changes;
+                }
+            }
+            
+            // Fallback to HargaLogModel (old system)
+            if ($this->hargaLogModel && method_exists($this->hargaLogModel, 'getRecentChanges')) {
+                $changes = $this->hargaLogModel->getRecentChanges($limit);
+                return $changes;
+            }
+
+            return [];
+
+        } catch (\Exception $e) {
+            log_message('error', 'DashboardService getRecentPriceChanges error: ' . $e->getMessage());
+            return [];
+        }
     }
 
-    private function getWasteByType(): array
+    /**
+     * Get waste by type with pagination
+     * 
+     * @param int $page Current page
+     * @param int $perPage Items per page
+     * @return array
+     */
+    private function getWasteByTypePaginated(int $page = 1, int $perPage = 4): array
     {
-        return $this->wasteModel
-            ->select('jenis_sampah, COUNT(*) as total_records, SUM(berat_kg) as total_berat, SUM(nilai_rupiah) as total_nilai')
-            ->groupBy('jenis_sampah')
-            ->orderBy('total_berat', 'DESC')
-            ->findAll();
+        try {
+            // Get waste type summary with aggregation
+            $query = $this->wasteModel
+                ->select('jenis_sampah, COUNT(*) as jumlah_data, SUM(berat) as total_berat, SUM(nilai_total) as total_nilai')
+                ->where('status', 'disetujui')
+                ->groupBy('jenis_sampah')
+                ->orderBy('total_berat', 'DESC');
+            
+            // Get total count for pagination
+            $totalItems = count($query->findAll());
+            $totalPages = ceil($totalItems / $perPage);
+            
+            // Apply pagination
+            $offset = ($page - 1) * $perPage;
+            $data = $query->limit($perPage, $offset)->findAll();
+            
+            // Create simple pager object
+            $pager = null;
+            if ($totalPages > 1) {
+                $pager = [
+                    'currentPage' => $page,
+                    'totalPages' => $totalPages,
+                    'perPage' => $perPage,
+                    'totalItems' => $totalItems,
+                    'hasMore' => $page < $totalPages,
+                    'hasPrevious' => $page > 1
+                ];
+            }
+
+            return [
+                'data' => $data,
+                'pager' => $pager,
+                'totalPages' => $totalPages,
+                'totalItems' => $totalItems
+            ];
+
+        } catch (\Exception $e) {
+            log_message('error', 'DashboardService getWasteByTypePaginated error: ' . $e->getMessage());
+            
+            return [
+                'data' => [],
+                'pager' => null,
+                'totalPages' => 0,
+                'totalItems' => 0
+            ];
+        }
     }
 
-    private function calculateTotalValue(): float
+    /**
+     * Get Manajemen Sampah Statistics (single call)
+     * Returns all stats needed for the dashboard in one array
+     * 
+     * @return array
+     */
+    public function getManajemenSampahStats(): array
     {
-        $result = $this->wasteModel
-            ->selectSum('nilai_rupiah', 'total_nilai')
-            ->where('status', 'approved')
-            ->get()
-            ->getRow();
+        try {
+            // Get all statistics in one go
+            $totalJenis = $this->hargaModel->countAllTypes();
+            $hargaAktif = $this->hargaModel->countActivePrices();
+            $bisaDijual = $this->hargaModel->countSellable();
+            
+            // Use HargaLogModel instead of ChangeLogModel (change_logs table doesn't exist)
+            $recentChanges = [];
+            $changeCount = 0;
+            $todayCount = 0;
+            
+            if ($this->hargaLogModel && method_exists($this->hargaLogModel, 'getRecentChanges')) {
+                $recentChanges = $this->hargaLogModel->getRecentChanges(5);
+                $changeCount = count($recentChanges);
+                
+                // Count today's changes
+                $today = date('Y-m-d');
+                $todayCount = 0;
+                foreach ($recentChanges as $change) {
+                    if (date('Y-m-d', strtotime($change['created_at'])) === $today) {
+                        $todayCount++;
+                    }
+                }
+            }
 
-        return $result->total_nilai ?? 0;
+            return [
+                'total_jenis_sampah' => $totalJenis,
+                'harga_aktif' => $hargaAktif,
+                'bisa_dijual' => $bisaDijual,
+                'perubahan_count' => $todayCount,
+                'perubahan_total' => $changeCount,
+                'recent_changes' => $recentChanges,
+                'recent_changes_count' => $changeCount
+            ];
+
+        } catch (\Exception $e) {
+            log_message('error', 'DashboardService getManajemenSampahStats error: ' . $e->getMessage());
+            
+            return [
+                'total_jenis_sampah' => 0,
+                'harga_aktif' => 0,
+                'bisa_dijual' => 0,
+                'perubahan_count' => 0,
+                'perubahan_total' => 0,
+                'recent_changes' => [],
+                'recent_changes_count' => 0
+            ];
+        }
     }
 
-    private function getDefaultStats(): array
+    /**
+     * Get main dashboard statistics
+     * 
+     * @return array
+     */
+    public function getDashboardStats(): array
     {
-        return [
-            'total_users' => 0,
-            'menunggu_review' => 0,
-            'disetujui' => 0,
-            'perlu_revisi' => 0,
-            'total_berat' => 0,
-            'total_nilai' => 0
-        ];
+        try {
+            // Get waste submissions statistics
+            $totalSubmissions = $this->wasteModel->countAllResults(false);
+            $pendingSubmissions = $this->wasteModel->where('status', 'dikirim')->countAllResults(false);
+            $approvedSubmissions = $this->wasteModel->where('status', 'disetujui')->countAllResults(false);
+            
+            // Get user statistics
+            $totalUsers = $this->userModel->countAllResults(false);
+            $activeUsers = $this->userModel->where('status', 'active')->countAllResults(false);
+            
+            // Get recent submissions
+            $recentSubmissions = $this->wasteModel
+                ->select('waste_management.*, users.nama_lengkap as user_name, users.username')
+                ->join('users', 'users.id = waste_management.user_id', 'left')
+                ->where('waste_management.status', 'dikirim')
+                ->orderBy('waste_management.created_at', 'DESC')
+                ->limit(5)
+                ->findAll();
+
+            return [
+                'total_submissions' => $totalSubmissions,
+                'pending_submissions' => $pendingSubmissions,
+                'approved_submissions' => $approvedSubmissions,
+                'total_users' => $totalUsers,
+                'active_users' => $activeUsers,
+                'recent_submissions' => $recentSubmissions
+            ];
+
+        } catch (\Exception $e) {
+            log_message('error', 'DashboardService getDashboardStats error: ' . $e->getMessage());
+            
+            return [
+                'total_submissions' => 0,
+                'pending_submissions' => 0,
+                'approved_submissions' => 0,
+                'total_users' => 0,
+                'active_users' => 0,
+                'recent_submissions' => []
+            ];
+        }
+    }
+
+    /**
+     * Get waste type distribution
+     * 
+     * @return array
+     */
+    public function getWasteTypeDistribution(): array
+    {
+        try {
+            $results = $this->wasteModel
+                ->select('jenis_sampah, COUNT(*) as count, SUM(berat) as total_berat')
+                ->where('status', 'disetujui')
+                ->groupBy('jenis_sampah')
+                ->orderBy('count', 'DESC')
+                ->findAll();
+
+            return $results;
+
+        } catch (\Exception $e) {
+            log_message('error', 'DashboardService getWasteTypeDistribution error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get monthly waste statistics
+     * 
+     * @param int $months Number of months to retrieve
+     * @return array
+     */
+    public function getMonthlyWasteStats(int $months = 6): array
+    {
+        try {
+            $results = $this->wasteModel
+                ->select('DATE_FORMAT(created_at, "%Y-%m") as month, COUNT(*) as count, SUM(berat) as total_berat')
+                ->where('status', 'disetujui')
+                ->where('created_at >=', date('Y-m-d', strtotime("-{$months} months")))
+                ->groupBy('month')
+                ->orderBy('month', 'ASC')
+                ->findAll();
+
+            return $results;
+
+        } catch (\Exception $e) {
+            log_message('error', 'DashboardService getMonthlyWasteStats error: ' . $e->getMessage());
+            return [];
+        }
     }
 }

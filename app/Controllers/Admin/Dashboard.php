@@ -22,15 +22,21 @@ class Dashboard extends BaseController
                 return redirect()->to('/auth/login');
             }
 
+            // Get page number untuk waste by type pagination
+            $page = $this->request->getGet('page') ?? 1;
+            $perPage = 4; // 4 items per page
+
             // Get dashboard data melalui service
-            $data = $this->dashboardService->getDashboardData();
+            $data = $this->dashboardService->getDashboardData($page, $perPage);
             
             $viewData = [
                 'title' => 'Dashboard Admin Pusat',
                 'stats' => $data['stats'],
                 'recentSubmissions' => $data['recentSubmissions'],
                 'recentPriceChanges' => $data['recentPriceChanges'],
-                'wasteByType' => $data['wasteByType']
+                'wasteByType' => $data['wasteByType'],
+                'pager' => $data['pager'],
+                'currentPage' => $page
             ];
 
             return view('admin_pusat/dashboard', $viewData);
@@ -51,6 +57,8 @@ class Dashboard extends BaseController
                 'recentSubmissions' => [],
                 'recentPriceChanges' => [],
                 'wasteByType' => [],
+                'pager' => null,
+                'currentPage' => 1,
                 'error' => 'Terjadi kesalahan saat memuat dashboard'
             ]);
         }

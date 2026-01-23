@@ -34,7 +34,8 @@
         "ext-intl": "*",
         "ext-json": "*",
         "ext-mbstring": "*",
-        "ext-mysqlnd": "*"
+        "ext-mysqlnd": "*",
+        "dompdf/dompdf": "^3.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -151,11 +152,5 @@
         "branch-alias": {
             "dev-main": "1.0-dev"
         }
-    },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/codeigniter4/CodeIgniter4"
-        }
-    ]
+    }
 }

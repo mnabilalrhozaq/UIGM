@@ -39,6 +39,8 @@ function formatCurrency($amount) {
     <title><?= $title ?? 'Dashboard Admin Pusat' ?></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Mobile Responsive CSS -->
+    <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
     <?= $this->include('partials/sidebar_admin_pusat') ?>
@@ -62,16 +64,6 @@ function formatCurrency($amount) {
                 </div>
             </div>
             
-            <div class="stat-card warning">
-                <div class="stat-icon">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?= displayStat($stats, 'menunggu_review') ?></h3>
-                    <p>Menunggu Review</p>
-                </div>
-            </div>
-            
             <div class="stat-card success">
                 <div class="stat-icon">
                     <i class="fas fa-check-circle"></i>
@@ -84,11 +76,11 @@ function formatCurrency($amount) {
             
             <div class="stat-card danger">
                 <div class="stat-icon">
-                    <i class="fas fa-edit"></i>
+                    <i class="fas fa-times-circle"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?= displayStat($stats, 'perlu_revisi') ?></h3>
-                    <p>Perlu Revisi</p>
+                    <h3><?= displayStat($stats, 'ditolak') ?></h3>
+                    <p>Data Ditolak</p>
                 </div>
             </div>
             
@@ -119,9 +111,9 @@ function formatCurrency($amount) {
             <div class="content-main">
                 <div class="card">
                     <div class="card-header">
-                        <h3><i class="fas fa-inbox"></i> Data Waste Terbaru Menunggu Review</h3>
+                        <h3><i class="fas fa-inbox"></i> Data Waste Terbaru</h3>
                         <div class="card-actions">
-                            <a href="<?= base_url('/admin-pusat/review') ?>" class="btn btn-primary btn-sm">
+                            <a href="<?= base_url('/admin-pusat/waste') ?>" class="btn btn-primary btn-sm">
                                 <i class="fas fa-eye"></i> Lihat Semua
                             </a>
                         </div>
@@ -132,28 +124,61 @@ function formatCurrency($amount) {
                                 <table class="table table-hover">
                                     <thead>
                                         <tr>
+                                            <th>No</th>
+                                            <th>Tanggal</th>
+                                            <th>Unit</th>
                                             <th>Jenis Sampah</th>
                                             <th>Berat (kg)</th>
-                                            <th>Nilai Jual</th>
-                                            <th>User</th>
-                                            <th>Tanggal</th>
+                                            <th>Nilai</th>
+                                            <th>Status</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($recentSubmissions as $submission): ?>
+                                        <?php $no = 1; foreach ($recentSubmissions as $submission): ?>
                                         <tr>
+                                            <td><?= $no++ ?></td>
                                             <td>
-                                                <span class="badge bg-primary"><?= $submission['jenis_sampah'] ?></span>
+                                                <small><?= $submission['tanggal_input'] ?? date('d/m/Y', strtotime($submission['created_at'])) ?></small>
                                             </td>
-                                            <td><?= number_format($submission['berat_kg'], 2) ?> kg</td>
-                                            <td><?= formatCurrency($submission['nilai_jual']) ?></td>
-                                            <td><?= $submission['nama_lengkap'] ?? $submission['username'] ?></td>
-                                            <td><?= date('d/m/Y H:i', strtotime($submission['created_at'])) ?></td>
                                             <td>
-                                                <a href="<?= base_url('/admin-pusat/review/detail/' . $submission['id']) ?>" 
-                                                   class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-eye"></i> Review
+                                                <strong><?= htmlspecialchars($submission['nama_unit'] ?? 'N/A') ?></strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary"><?= htmlspecialchars($submission['jenis_sampah']) ?></span>
+                                            </td>
+                                            <td><strong><?= number_format($submission['berat_kg'], 2) ?></strong></td>
+                                            <td>
+                                                <?php if ($submission['kategori_sampah'] === 'bisa_dijual'): ?>
+                                                    <strong class="text-success"><?= formatCurrency($submission['nilai_rupiah'] ?? 0) ?></strong>
+                                                <?php else: ?>
+                                                    <span class="text-muted">-</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php 
+                                                $statusBadge = [
+                                                    'draft' => 'secondary',
+                                                    'dikirim' => 'info',
+                                                    'disetujui' => 'success',
+                                                    'perlu_revisi' => 'warning'
+                                                ];
+                                                $badgeClass = $statusBadge[$submission['status']] ?? 'secondary';
+                                                $statusText = [
+                                                    'draft' => 'Draft',
+                                                    'dikirim' => 'Dikirim',
+                                                    'disetujui' => 'Disetujui',
+                                                    'perlu_revisi' => 'Perlu Revisi'
+                                                ];
+                                                ?>
+                                                <span class="badge bg-<?= $badgeClass ?>">
+                                                    <?= $statusText[$submission['status']] ?? ucfirst($submission['status']) ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="<?= base_url('/admin-pusat/waste') ?>" 
+                                                   class="btn btn-sm btn-outline-primary" title="Lihat Detail">
+                                                    <i class="fas fa-eye"></i>
                                                 </a>
                                             </td>
                                         </tr>
@@ -164,7 +189,7 @@ function formatCurrency($amount) {
                         <?php else: ?>
                             <div class="empty-state">
                                 <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">Tidak ada data menunggu review</p>
+                                <p class="text-muted">Tidak ada data waste</p>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -188,13 +213,13 @@ function formatCurrency($amount) {
                                 <i class="fas fa-toggle-on"></i>
                                 <span>Feature Toggle</span>
                             </a>
-                            <a href="<?= base_url('/admin-pusat/review') ?>" class="quick-action-btn">
-                                <i class="fas fa-clipboard-check"></i>
-                                <span>Review Data Waste</span>
+                            <a href="<?= base_url('/admin-pusat/waste') ?>" class="quick-action-btn">
+                                <i class="fas fa-trash-alt"></i>
+                                <span>Waste Management</span>
                             </a>
-                            <a href="<?= base_url('/admin-pusat/laporan') ?>" class="quick-action-btn">
-                                <i class="fas fa-chart-bar"></i>
-                                <span>Generate Laporan</span>
+                            <a href="<?= base_url('/admin-pusat/laporan-waste') ?>" class="quick-action-btn">
+                                <i class="fas fa-chart-pie"></i>
+                                <span>Laporan Waste</span>
                             </a>
                             <a href="<?= base_url('/admin-pusat/user-management') ?>" class="quick-action-btn">
                                 <i class="fas fa-users-cog"></i>
@@ -207,50 +232,83 @@ function formatCurrency($amount) {
                 <!-- Recent Price Changes -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><i class="fas fa-history"></i> Perubahan Harga Terbaru</h3>
+                        <h3><i class="fas fa-history"></i> Perubahan Harga Terbaru (Hari Ini)</h3>
+                        <div class="card-actions">
+                            <a href="<?= base_url('/admin-pusat/manajemen-harga/logs') ?>" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-history"></i> Lihat Semua
+                            </a>
+                        </div>
                     </div>
                     <div class="card-body">
                         <?php if (!empty($recentPriceChanges)): ?>
-                            <div class="activity-list">
-                                <?php foreach ($recentPriceChanges as $change): ?>
-                                <div class="activity-item">
-                                    <div class="activity-icon">
-                                        <i class="fas fa-<?= $change['aksi'] === 'update' ? 'edit' : 'plus' ?>"></i>
-                                    </div>
-                                    <div class="activity-content">
-                                        <p><strong><?= $change['jenis_sampah'] ?></strong></p>
-                                        <small class="text-muted">
-                                            <?= $change['admin_nama'] ?> • <?= date('d/m/Y H:i', strtotime($change['created_at'])) ?>
-                                        </small>
-                                        <br>
-                                        <span class="badge bg-<?= $change['aksi'] === 'update' ? 'warning' : 'success' ?>">
-                                            <?= ucfirst($change['aksi']) ?>
-                                        </span>
-                                        <div class="mt-2">
-                                            <?php if ($change['harga_lama']): ?>
-                                                <small class="text-muted text-decoration-line-through">
-                                                    <?= formatCurrency($change['harga_lama']) ?>
-                                                </small>
-                                                <br>
-                                            <?php endif; ?>
-                                            <strong class="text-success">
-                                                <?= formatCurrency($change['harga_baru']) ?>
-                                            </strong>
-                                        </div>
-                                    </div>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                            
-                            <div class="text-center mt-3">
-                                <a href="<?= base_url('/admin-pusat/manajemen-harga/logs') ?>" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-history"></i> Lihat Semua Log
-                                </a>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Jenis Sampah</th>
+                                            <th>Harga Lama</th>
+                                            <th>Harga Baru</th>
+                                            <th>Perubahan</th>
+                                            <th>Admin</th>
+                                            <th>Waktu</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($recentPriceChanges as $change): ?>
+                                        <tr>
+                                            <td>
+                                                <strong><?= htmlspecialchars($change['jenis_sampah']) ?></strong>
+                                                <?php if (!empty($change['nama_jenis'])): ?>
+                                                    <br><small class="text-muted"><?= htmlspecialchars($change['nama_jenis']) ?></small>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php if ($change['harga_lama']): ?>
+                                                    <span class="text-muted text-decoration-line-through">
+                                                        <?= formatCurrency($change['harga_lama']) ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="text-muted">-</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <strong class="text-success">
+                                                    <?= formatCurrency($change['harga_baru']) ?>
+                                                </strong>
+                                            </td>
+                                            <td>
+                                                <?php 
+                                                if ($change['harga_lama']) {
+                                                    $selisih = $change['harga_baru'] - $change['harga_lama'];
+                                                    $persen = ($change['harga_lama'] > 0) ? ($selisih / $change['harga_lama']) * 100 : 0;
+                                                    $badgeClass = $selisih > 0 ? 'success' : 'danger';
+                                                    $icon = $selisih > 0 ? 'arrow-up' : 'arrow-down';
+                                                ?>
+                                                    <span class="badge bg-<?= $badgeClass ?>">
+                                                        <i class="fas fa-<?= $icon ?>"></i>
+                                                        <?= number_format(abs($persen), 1) ?>%
+                                                    </span>
+                                                <?php } else { ?>
+                                                    <span class="badge bg-info">
+                                                        <i class="fas fa-plus"></i> Baru
+                                                    </span>
+                                                <?php } ?>
+                                            </td>
+                                            <td>
+                                                <small>Admin</small>
+                                            </td>
+                                            <td>
+                                                <small><?= $change['waktu_perubahan'] ?? date('d/m/Y H:i', strtotime($change['created_at'])) ?></small>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
                             </div>
                         <?php else: ?>
                             <div class="empty-state">
                                 <i class="fas fa-history fa-2x text-muted mb-2"></i>
-                                <p class="text-muted mb-0">Belum ada perubahan harga</p>
+                                <p class="text-muted mb-0">Belum ada perubahan harga hari ini</p>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -263,15 +321,27 @@ function formatCurrency($amount) {
         <div class="card">
             <div class="card-header">
                 <h3><i class="fas fa-chart-pie"></i> Ringkasan Waste Management per Jenis</h3>
+                <div class="card-actions">
+                    <?php if (isset($pager) && $pager['totalPages'] > 1): ?>
+                        <span class="text-white me-3">
+                            Halaman <?= $pager['currentPage'] ?> dari <?= $pager['totalPages'] ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
             </div>
             <div class="card-body">
                 <div class="waste-grid">
                     <?php foreach ($wasteByType as $waste): ?>
                     <div class="waste-item">
                         <div class="waste-header">
-                            <h5><?= $waste['jenis_sampah'] ?></h5>
+                            <h5><?= htmlspecialchars($waste['nama_jenis']) ?></h5>
                             <span class="waste-total"><?= $waste['total_records'] ?> records</span>
                         </div>
+                        <?php if (!empty($waste['jenis_sampah'])): ?>
+                            <p class="text-muted mb-2" style="font-size: 12px;">
+                                <i class="fas fa-tag"></i> Kategori: <?= htmlspecialchars($waste['jenis_sampah']) ?>
+                            </p>
+                        <?php endif; ?>
                         <div class="waste-stats">
                             <div class="waste-stat">
                                 <span class="stat-label">Total Berat:</span>
@@ -293,6 +363,36 @@ function formatCurrency($amount) {
                     </div>
                     <?php endforeach; ?>
                 </div>
+                
+                <!-- Pagination -->
+                <?php if (isset($pager) && $pager['totalPages'] > 1): ?>
+                <div class="pagination-wrapper mt-4">
+                    <nav aria-label="Waste type pagination">
+                        <ul class="pagination justify-content-center">
+                            <!-- Previous -->
+                            <li class="page-item <?= $pager['currentPage'] <= 1 ? 'disabled' : '' ?>">
+                                <a class="page-link" href="<?= base_url('/admin-pusat/dashboard?page=' . ($pager['currentPage'] - 1)) ?>" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            
+                            <!-- Page Numbers -->
+                            <?php for ($i = 1; $i <= $pager['totalPages']; $i++): ?>
+                                <li class="page-item <?= $i == $pager['currentPage'] ? 'active' : '' ?>">
+                                    <a class="page-link" href="<?= base_url('/admin-pusat/dashboard?page=' . $i) ?>"><?= $i ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            
+                            <!-- Next -->
+                            <li class="page-item <?= $pager['currentPage'] >= $pager['totalPages'] ? 'disabled' : '' ?>">
+                                <a class="page-link" href="<?= base_url('/admin-pusat/dashboard?page=' . ($pager['currentPage'] + 1)) ?>" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
         <?php endif; ?>
@@ -317,6 +417,8 @@ function formatCurrency($amount) {
             });
         });
     </script>
+    <!-- Mobile Menu JS -->
+    <script src="<?= base_url('/js/mobile-menu.js') ?>"></script>
 </body>
 </html>
 
@@ -389,6 +491,7 @@ body {
 .stat-card.danger { border-left-color: #dc3545; }
 .stat-card.info { border-left-color: #17a2b8; }
 .stat-card.secondary { border-left-color: #6c757d; }
+.stat-card.purple { border-left-color: #6f42c1; }
 
 .stat-icon {
     width: 60px;
@@ -408,6 +511,7 @@ body {
 .stat-card.danger .stat-icon { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
 .stat-card.info .stat-icon { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
 .stat-card.secondary .stat-icon { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+.stat-card.purple .stat-icon { background: linear-gradient(135deg, #9d50bb 0%, #6e48aa 100%); }
 
 .stat-content {
     flex: 1;
@@ -486,11 +590,12 @@ body {
 /* ===== TABLES ===== */
 .table-responsive {
     border-radius: 10px;
-    overflow: hidden;
+    overflow-x: auto;
 }
 
 .table {
     margin-bottom: 0;
+    white-space: nowrap;
 }
 
 .table th {
@@ -499,6 +604,7 @@ body {
     font-weight: 600;
     color: #2c3e50;
     padding: 15px;
+    white-space: nowrap;
 }
 
 .table td {
@@ -622,7 +728,8 @@ body {
 .waste-header h5 {
     margin: 0;
     color: #2c3e50;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 20px !important;
 }
 
 .waste-total {

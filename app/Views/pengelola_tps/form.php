@@ -90,11 +90,24 @@
                                 </label>
                                 <select class="form-select" id="jenis_sampah" name="jenis_sampah" required onchange="updateKategoriSampah()">
                                     <option value="">-- Pilih Jenis Sampah --</option>
-                                    <option value="Plastik" <?= old('jenis_sampah') === 'Plastik' ? 'selected' : '' ?>>Plastik</option>
-                                    <option value="Kertas" <?= old('jenis_sampah') === 'Kertas' ? 'selected' : '' ?>>Kertas</option>
-                                    <option value="Logam" <?= old('jenis_sampah') === 'Logam' ? 'selected' : '' ?>>Logam</option>
-                                    <option value="Organik" <?= old('jenis_sampah') === 'Organik' ? 'selected' : '' ?>>Organik</option>
-                                    <option value="Residu" <?= old('jenis_sampah') === 'Residu' ? 'selected' : '' ?>>Residu</option>
+                                    <?php if (!empty($categories)): ?>
+                                        <?php foreach ($categories as $category): ?>
+                                            <option value="<?= htmlspecialchars($category['nama_jenis']) ?>" 
+                                                    data-kategori="<?= htmlspecialchars($category['jenis_sampah']) ?>"
+                                                    data-harga="<?= $category['harga_per_satuan'] ?>"
+                                                    data-dapat-dijual="<?= $category['dapat_dijual'] ?>"
+                                                    <?= old('jenis_sampah') === $category['nama_jenis'] ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($category['nama_jenis']) ?> (<?= htmlspecialchars($category['jenis_sampah']) ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <!-- Fallback jika tidak ada data -->
+                                        <option value="Plastik">Plastik</option>
+                                        <option value="Kertas">Kertas</option>
+                                        <option value="Logam">Logam</option>
+                                        <option value="Organik">Organik</option>
+                                        <option value="Residu">Residu</option>
+                                    <?php endif; ?>
                                 </select>
                                 <div class="form-text">Pilih jenis sampah yang diterima</div>
                             </div>

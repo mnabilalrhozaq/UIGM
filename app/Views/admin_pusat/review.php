@@ -280,11 +280,11 @@
     <a href="<?= base_url('/admin-pusat/dashboard') ?>" class="nav-link">
         <i class="fas fa-home"></i> Dashboard
     </a>
-    <a href="<?= base_url('/admin-pusat/monitoring') ?>" class="nav-link">
-        <i class="fas fa-chart-line"></i> Monitoring Unit
+    <a href="<?= base_url('/admin-pusat/waste') ?>" class="nav-link">
+        <i class="fas fa-trash-alt"></i> Waste Management
     </a>
-    <a href="<?= base_url('/admin-pusat/notifikasi') ?>" class="nav-link">
-        <i class="fas fa-bell"></i> Notifikasi
+    <a href="<?= base_url('/admin-pusat/laporan-waste') ?>" class="nav-link">
+        <i class="fas fa-chart-pie"></i> Laporan Waste
     </a>
 </div>
 
@@ -397,8 +397,8 @@
             <div class="card-body">
                 <p>Setelah semua kategori direview, sistem akan otomatis mengupdate status pengiriman.</p>
                 <div style="margin-top: 15px;">
-                    <a href="/admin-pusat/monitoring" class="btn btn-primary">
-                        <i class="fas fa-arrow-left"></i> Kembali ke Monitoring
+                    <a href="<?= base_url('/admin-pusat/dashboard') ?>" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Kembali ke Dashboard
                     </a>
                 </div>
             </div>

@@ -1,0 +1,136 @@
+FIX HARGA PER SATUAN SESUAI MASTER DATA
+=========================================
+Tanggal: 23 Januari 2026
+
+MASALAH:
+========
+Harga per satuan di form input data sampah (User & TPS) selalu menampilkan "/kg"
+padahal setiap jenis sampah punya satuan berbeda di master data.
+
+Contoh Bug:
+- Keyboard Bekas: Rp 45.000/pcs (di master)
+- Tampil di form: Rp 45.000/kg (SALAH!)
+
+PENYEBAB:
+=========
+JavaScript function calculateEstimate() hardcode satuan "/kg" di baris:
+hargaDisplay.value = 'Rp ' + hargaPerKg.toLocaleString('id-ID') + '/kg';
+
+Seharusnya menggunakan satuan dari data master (data-satuan attribute).
+
+SOLUSI:
+=======
+Mengubah JavaScript agar menggunakan satuan dari master data:
+
+SEBELUM:
+--------
+const hargaPerKg = parseFloat(selectedOption.getAttribute('data-harga')) || 0;
+const satuanDefault = selectedOption.getAttribute('data-satuan') || 'kg';
+...
+hargaDisplay.value = 'Rp ' + hargaPerKg.toLocaleString('id-ID') + '/kg';
+
+SESUDAH:
+--------
+const hargaPerSatuan = parseFloat(selectedOption.getAttribute('data-harga')) || 0;
+const satuanMaster = selectedOption.getAttribute('data-satuan') || 'kg';
+...
+const hargaPerKg = hargaPerSatuan / konversiKeKg(1, satuanMaster);
+...
+hargaDisplay.value = 'Rp ' + hargaPerSatuan.toLocaleString('id-ID') + '/' + satuanMaster;
+
+FILE YANG DIMODIFIKASI:
+=======================
+
+1. app/Views/user/waste.php
+   - Function calculateEstimate()
+   - Menggunakan satuanMaster dari data-satuan attribute
+   - Menampilkan harga dengan satuan yang benar
+
+2. app/Views/pengelola_tps/waste.php
+   - Function calculateEstimate()
+   - Menggunakan satuanMaster dari data-satuan attribute
+   - Menampilkan harga dengan satuan yang benar
+
+PERUBAHAN DETAIL:
+=================
+
+1. Variable Naming:
+   - hargaPerKg → hargaPerSatuan (lebih akurat)
+   - satuanDefault → satuanMaster (lebih jelas)
+
+2. Perhitungan:
+   - Harga per kg dihitung dari: hargaPerSatuan / konversiKeKg(1, satuanMaster)
+   - Ini memastikan perhitungan total tetap akurat dalam kg
+
+3. Display:
+   - Harga ditampilkan: hargaPerSatuan + '/' + satuanMaster
+   - Bukan hardcode '/kg'
+
+CONTOH HASIL:
+=============
+
+Jenis Sampah: Keyboard Bekas
+Master Data: Rp 45.000/pcs
+
+SEBELUM FIX:
+- Harga per Satuan: Rp 45.000/kg ❌
+
+SESUDAH FIX:
+- Harga per Satuan: Rp 45.000/pcs ✅
+
+Jenis Sampah: Sampah Kertas
+Master Data: Rp 3.000/kg
+
+SEBELUM FIX:
+- Harga per Satuan: Rp 3.000/kg ✅ (kebetulan benar)
+
+SESUDAH FIX:
+- Harga per Satuan: Rp 3.000/kg ✅ (tetap benar)
+
+TESTING:
+========
+
+1. Test dengan berbagai satuan:
+   ✅ kg (Sampah Kertas: Rp 3.000/kg)
+   ✅ pcs (Keyboard Bekas: Rp 45.000/pcs)
+   ✅ gram (Sampah Residu: Rp 500/gram)
+   ✅ karung (Limbah B3: Rp 0/karung)
+
+2. Test perhitungan total:
+   - Input: 2 pcs Keyboard Bekas
+   - Harga: Rp 45.000/pcs
+   - Konversi: 2 pcs = 0.2 kg (asumsi 1 pcs = 0.1 kg)
+   - Harga per kg: Rp 45.000 / 0.1 = Rp 450.000/kg
+   - Total: Rp 450.000 × 0.2 kg = Rp 90.000 ✅
+
+3. Test saat admin tambah jenis sampah baru:
+   - Admin set: Plastik Botol, Rp 2.000/liter
+   - User pilih: Plastik Botol
+   - Tampil: Rp 2.000/liter ✅
+   - Input: 5 liter
+   - Total: Rp 10.000 ✅
+
+BENEFIT:
+========
+
+1. ✅ Harga per satuan tampil sesuai master data
+2. ✅ Tidak ada lagi hardcode "/kg"
+3. ✅ Mendukung semua jenis satuan (kg, gram, pcs, liter, karung, ton)
+4. ✅ Perhitungan total tetap akurat
+5. ✅ Saat admin tambah jenis sampah baru, otomatis menggunakan satuan yang benar
+
+CATATAN PENTING:
+================
+
+Perhitungan internal tetap menggunakan kg sebagai base unit:
+- Semua berat dikonversi ke kg
+- Harga dikonversi ke per kg
+- Total dihitung dalam kg
+- Ini memastikan konsistensi data di database
+
+Yang berubah hanya DISPLAY di form:
+- Harga ditampilkan sesuai satuan master
+- User lebih mudah memahami
+- Tidak membingungkan
+
+STATUS: ✅ SELESAI

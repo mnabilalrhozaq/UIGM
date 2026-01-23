@@ -47,7 +47,10 @@ class UserManagement extends BaseController
                 $builder->where('users.unit_id', $unitFilter);
             }
 
-            $users = $builder->orderBy('users.created_at', 'DESC')->findAll();
+            // Pagination
+            $perPage = 10;
+            $users = $builder->orderBy('users.created_at', 'DESC')->paginate($perPage);
+            $pager = $this->userModel->pager;
 
             $units = $this->unitModel->where('status_aktif', 1)->findAll();
 
@@ -65,6 +68,7 @@ class UserManagement extends BaseController
             $data = [
                 'title' => 'User Management',
                 'users' => $users,
+                'pager' => $pager,
                 'units' => $units,
                 'allUnits' => $units, // Untuk dropdown filter
                 'stats' => $stats,

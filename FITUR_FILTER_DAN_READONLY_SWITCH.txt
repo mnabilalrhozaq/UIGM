@@ -1,0 +1,229 @@
+╔══════════════════════════════════════════════════════════════════╗
+║    FITUR FILTER & READ-ONLY SWITCH SUDAH DITAMBAHKAN ✅          ║
+╚══════════════════════════════════════════════════════════════════╝
+
+FITUR BARU YANG DITAMBAHKAN:
+=============================
+
+1. ✅ FITUR FILTER STATUS
+   - Filter Semua: Tampilkan semua data (aktif + nonaktif)
+   - Filter Aktif: Tampilkan hanya data aktif
+   - Filter Nonaktif: Tampilkan hanya data nonaktif
+   - Dengan counter jumlah data di setiap button
+
+2. ✅ SWITCH READ-ONLY
+   - Toggle switch di kolom Status Aktif sekarang DISABLED
+   - Hanya menampilkan status (tidak bisa diklik)
+   - Cursor berubah jadi "not-allowed"
+   - Label text berwarna abu-abu (text-muted)
+
+═══════════════════════════════════════════════════════════════════
+
+CARA MENGGUNAKAN FITUR FILTER:
+===============================
+
+Lokasi Filter:
+- Di header card "Daftar Harga Sampah"
+- Sebelah kanan judul
+- 3 button: Semua, Aktif, Nonaktif
+
+Button Filter:
+┌─────────────────────────────────────────────────────────────────┐
+│ Daftar Harga Sampah    [Semua (14)] [Aktif (11)] [Nonaktif (3)]│
+└─────────────────────────────────────────────────────────────────┘
+
+Cara Pakai:
+1. Klik [Semua (14)] → Tampilkan semua 14 data
+2. Klik [Aktif (11)] → Tampilkan hanya 11 data aktif
+3. Klik [Nonaktif (3)] → Tampilkan hanya 3 data nonaktif
+
+Visual Indicator:
+- Button aktif: Background berwarna (primary/success/secondary)
+- Button tidak aktif: Outline saja
+
+═══════════════════════════════════════════════════════════════════
+
+PERUBAHAN SWITCH STATUS AKTIF:
+===============================
+
+SEBELUMNYA:
+- Switch bisa diklik
+- Klik untuk toggle aktif/nonaktif
+- Ada JavaScript handler
+
+SEKARANG:
+- Switch DISABLED (tidak bisa diklik)
+- Hanya menampilkan status
+- Cursor: not-allowed (🚫)
+- Label: text-muted (abu-abu)
+- Tidak ada JavaScript handler
+
+Tampilan:
+┌─────────────────────────────────────────────────────────────────┐
+│ Status Aktif                                                     │
+│ ─────────────────                                                │
+│ [🔵●────] Aktif      (switch ON, disabled)                      │
+│ [────●⚪] Nonaktif   (switch OFF, disabled)                     │
+└─────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════
+
+CARA TESTING:
+=============
+
+STEP 1: Refresh Halaman
+------------------------
+1. Tekan Ctrl+F5 (hard refresh)
+2. Buka: http://localhost:8080/admin-pusat/manajemen-harga
+
+STEP 2: Test Filter "Semua"
+----------------------------
+1. Klik button [Semua (14)]
+2. URL: /admin-pusat/manajemen-harga
+3. Tabel menampilkan: 14 data (aktif + nonaktif)
+4. Button "Semua" berwarna biru (active)
+
+STEP 3: Test Filter "Aktif"
+----------------------------
+1. Klik button [Aktif (11)]
+2. URL: /admin-pusat/manajemen-harga?status=aktif
+3. Tabel menampilkan: 11 data aktif saja
+4. Button "Aktif" berwarna hijau (active)
+5. Data nonaktif tidak muncul
+
+STEP 4: Test Filter "Nonaktif"
+-------------------------------
+1. Klik button [Nonaktif (3)]
+2. URL: /admin-pusat/manajemen-harga?status=nonaktif
+3. Tabel menampilkan: 3 data nonaktif saja
+4. Button "Nonaktif" berwarna abu-abu (active)
+5. Data aktif tidak muncul
+
+STEP 5: Test Switch Read-Only
+------------------------------
+1. Coba klik switch di kolom Status Aktif
+2. Switch TIDAK BERUBAH (disabled)
+3. Cursor berubah jadi 🚫 (not-allowed)
+4. Tidak ada perubahan status
+
+═══════════════════════════════════════════════════════════════════
+
+HASIL YANG DIHARAPKAN:
+=======================
+
+✅ Filter "Semua" menampilkan 14 data
+✅ Filter "Aktif" menampilkan 11 data aktif
+✅ Filter "Nonaktif" menampilkan 3 data nonaktif
+✅ Button filter menunjukkan jumlah data
+✅ Active button berwarna (primary/success/secondary)
+✅ Switch tidak bisa diklik (disabled)
+✅ Cursor berubah jadi not-allowed saat hover switch
+✅ Pagination tetap berfungsi di setiap filter
+
+═══════════════════════════════════════════════════════════════════
+
+PENJELASAN TEKNIS:
+==================
+
+Filter Implementation:
+```php
+$statusFilter = $this->request->getGet('status');
+if ($statusFilter === 'aktif') {
+    $hargaModel->where('status_aktif', 1);
+} elseif ($statusFilter === 'nonaktif') {
+    $hargaModel->where('status_aktif', 0);
+}
+```
+
+URL Pattern:
+- Semua: /admin-pusat/manajemen-harga
+- Aktif: /admin-pusat/manajemen-harga?status=aktif
+- Nonaktif: /admin-pusat/manajemen-harga?status=nonaktif
+
+Switch Disabled:
+```html
+<input class="form-check-input" 
+       type="checkbox" 
+       checked 
+       disabled
+       style="cursor: not-allowed;">
+```
+
+═══════════════════════════════════════════════════════════════════
+
+FILE YANG DIUBAH:
+=================
+
+1. app/Controllers/Admin/Harga.php
+   → Added: Filter logic berdasarkan query string 'status'
+   → Added: Conditional where() untuk filter
+
+2. app/Views/admin_pusat/manajemen_harga/index.php
+   → Added: Filter buttons di card header
+   → Changed: Switch dari clickable → disabled (read-only)
+   → Removed: class "status-toggle" dan data-id
+   → Added: disabled attribute dan cursor style
+
+═══════════════════════════════════════════════════════════════════
+
+CATATAN PENTING:
+================
+
+1. Filter menggunakan query string (?status=aktif)
+   - Mudah di-bookmark
+   - Mudah di-share URL
+   - SEO friendly
+
+2. Switch sekarang hanya untuk tampilan
+   - Tidak bisa diubah dari tabel
+   - Harus edit via modal "Edit Jenis Sampah"
+   - Lebih aman, tidak ada perubahan accidental
+
+3. Counter di button filter dinamis
+   - Semua: Total semua data
+   - Aktif: Dari statistik card
+   - Nonaktif: Total - Aktif
+
+4. Pagination tetap berfungsi
+   - Filter "Aktif" dengan 11 data = 2 halaman
+   - Filter "Nonaktif" dengan 3 data = 1 halaman
+   - Filter "Semua" dengan 14 data = 2 halaman
+
+═══════════════════════════════════════════════════════════════════
+
+KEUNTUNGAN FITUR INI:
+=====================
+
+1. ✅ Admin bisa fokus lihat data aktif saja
+2. ✅ Admin bisa fokus lihat data nonaktif saja
+3. ✅ Tidak ada perubahan status accidental (switch disabled)
+4. ✅ Lebih aman (harus via modal edit)
+5. ✅ Counter membantu admin tahu jumlah data
+6. ✅ URL bisa di-bookmark untuk filter tertentu
+
+═══════════════════════════════════════════════════════════════════
+
+TROUBLESHOOTING:
+================
+
+Jika filter tidak berfungsi:
+1. Clear browser cache
+2. Hard refresh (Ctrl+F5)
+3. Cek URL berubah atau tidak saat klik filter
+4. Cek console browser untuk error
+
+Jika switch masih bisa diklik:
+1. Clear browser cache
+2. Hard refresh
+3. Inspect element, pastikan ada attribute "disabled"
+
+═══════════════════════════════════════════════════════════════════
+
+TIDAK PERLU RESTART SERVER!
+Langsung refresh browser (Ctrl+F5)! 🚀
+
+Laporkan hasilnya:
+- Apakah filter buttons muncul? _______
+- Apakah filter berfungsi? _______
+- Apakah switch tidak bisa diklik? _______
+- Apakah cursor berubah jadi not-allowed? _______

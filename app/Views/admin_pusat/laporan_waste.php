@@ -18,10 +18,6 @@
             </div>
             
             <div class="header-actions">
-                <a href="<?= base_url('/admin-pusat/laporan-waste/export-csv?' . http_build_query($filters)) ?>" 
-                   class="btn btn-success">
-                    <i class="fas fa-download"></i> Export CSV
-                </a>
                 <a href="<?= base_url('/admin-pusat/laporan-waste/export-pdf?' . http_build_query($filters)) ?>" 
                    class="btn btn-danger">
                     <i class="fas fa-file-pdf"></i> Export PDF

@@ -1,0 +1,106 @@
+FIX DROPDOWN JENIS SAMPAH - TAMPILKAN SEMUA DATA
+==================================================
+Tanggal: 23 Januari 2026
+
+MASALAH:
+Dropdown "Jenis Sampah" di form input data sampah hanya menampilkan 5 jenis
+(mengikuti pagination), sehingga user/TPS tidak bisa memilih jenis sampah lainnya.
+
+SOLUSI:
+Memisahkan data untuk 2 keperluan berbeda:
+1. Cards "Informasi Harga Sampah" → tetap pakai pagination (5 per halaman)
+2. Dropdown form input → tampilkan SEMUA jenis sampah (tidak pakai pagination)
+
+FILE YANG DIMODIFIKASI:
+========================
+
+1. app/Controllers/User/Waste.php
+   - Menambahkan query $allCategories untuk semua data (tanpa pagination)
+   - $categories → untuk cards (dengan pagination)
+   - $allCategories → untuk dropdown form (semua data)
+   - Pass kedua variable ke view
+
+2. app/Controllers/TPS/Waste.php
+   - Sama seperti User controller
+   - Menambahkan $allCategories untuk dropdown
+   - Fallback jika data kosong
+
+3. app/Views/user/waste.php
+   - Modal "Tambah Data Sampah":
+     * Dropdown menggunakan $allCategories (semua data)
+     * Fallback ke $categories jika $allCategories kosong
+   
+   - Modal "Edit Data Sampah":
+     * Dropdown menggunakan $allCategories (semua data)
+     * Fallback ke $categories jika $allCategories kosong
+
+4. app/Views/pengelola_tps/waste.php
+   - Modal "Tambah Data Sampah":
+     * Dropdown menggunakan $allCategories (semua data)
+     * Fallback ke $categories jika $allCategories kosong
+   
+   - Modal "Edit Data Sampah":
+     * Dropdown menggunakan $allCategories (semua data)
+     * Fallback ke $categories jika $allCategories kosong
+
+IMPLEMENTASI:
+=============
+
+Controller:
+-----------
+// Pagination untuk cards display (5 per halaman)
+$categories = $hargaModel->where('status_aktif', 1)
+                        ->orderBy('jenis_sampah', 'ASC')
+                        ->paginate(5, 'harga');
+
+// Semua data untuk dropdown form (tidak pakai pagination)
+$allCategories = $hargaModel->where('status_aktif', 1)
+                           ->orderBy('jenis_sampah', 'ASC')
+                           ->findAll();
+
+View:
+-----
+// Di dropdown form
+<?php 
+$dropdownCategories = isset($allCategories) && !empty($allCategories) 
+    ? $allCategories 
+    : $categories;
+foreach ($dropdownCategories as $category): 
+?>
+<option value="<?= $category['id'] ?>">
+    <?= $category['nama_jenis'] ?> (<?= $category['jenis_sampah'] ?>)
+</option>
+<?php endforeach; ?>
+
+HASIL:
+======
+✅ Cards "Informasi Harga Sampah" tetap pakai pagination (5 per halaman)
+✅ Dropdown form menampilkan SEMUA jenis sampah (12 jenis aktif)
+✅ User/TPS bisa memilih jenis sampah apapun saat input data
+✅ Tidak ada jenis sampah yang "hilang" dari dropdown
+
+TESTING:
+========
+1. Buka halaman User/TPS Waste
+2. Klik "Tambah Data Sampah"
+3. Buka dropdown "Jenis Sampah"
+4. Pastikan semua 12 jenis sampah muncul (tidak hanya 5)
+5. Pilih jenis sampah dan simpan data
+6. Pastikan data tersimpan dengan benar
+
+DATA JENIS SAMPAH AKTIF (12):
+==============================
+1. Anorganik - Kaca
+2. Besi - Besi Berkarat
+3. Elektronik - Kabel Tembaga Bekas
+4. Kertas - Sampah Kertas
+5. Limbah B3 - Limbah Bekas Lab
+6. Logam - Sampah Logam
+7. Logam - Kabel Tembaga
+8. Organik - Sampah Organik
+9. Organik - Sisa Makanan
+10. Plastik - Plastik Bekas
+11. Plastik - Keyboard Bekas
+12. Residu - Sampah Residu
+
+STATUS: ✅ SELESAI

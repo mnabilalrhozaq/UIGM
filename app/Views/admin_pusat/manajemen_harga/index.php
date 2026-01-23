@@ -1,13 +1,351 @@
+<?php
+// PREVENT DOUBLE RENDER - Check if already rendered
+$viewRenderId = 'harga_index_' . ($requestId ?? uniqid());
+if (isset($GLOBALS['_rendered_views'][$viewRenderId])) {
+    // Already rendered, skip
+    return;
+}
+$GLOBALS['_rendered_views'][$viewRenderId] = true;
+
+// Helper functions untuk icon
+if (!function_exists('getJenisIcon')) {
+    function getJenisIcon($jenis) {
+        $icons = [
+            'Plastik' => 'wine-bottle',
+            'Kertas' => 'file-alt',
+            'Logam' => 'cog',
+            'Organik' => 'seedling',
+            'Residu' => 'trash-alt',
+            'Elektronik' => 'laptop',
+            'Anorganik' => 'box',
+            'Besi' => 'wrench'
+        ];
+        return $icons[$jenis] ?? 'recycle';
+    }
+}
+
+if (!function_exists('getActionIcon')) {
+    function getActionIcon($status) {
+        $icons = [
+            'pending' => 'clock',
+            'approved' => 'check',
+            'rejected' => 'times',
+            'update' => 'edit'
+        ];
+        return $icons[$status] ?? 'history';
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="id">
+<!-- FORCE RELOAD: <?= date('Y-m-d H:i:s') ?> -->
+<!-- REQUEST ID: <?= $requestId ?? 'NO-ID' ?> -->
+<!-- RENDER CHECK: <?= $viewRenderId ?> -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= csrf_hash() ?>">
     <meta name="csrf-name" content="<?= csrf_token() ?>">
-    <title><?= $title ?? 'Manajemen Sampah' ?></title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title><?= esc($title ?? 'Manajemen Sampah') ?></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Mobile Responsive CSS -->
+    <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
+    
+    <style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #f8f9fa;
+    }
+
+    .main-content {
+        margin-left: 280px;
+        padding: 30px;
+        min-height: 100vh;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 20px 0;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .header-content h1 {
+        color: #2c3e50;
+        margin-bottom: 5px;
+        font-size: 28px;
+        font-weight: 700;
+    }
+
+    .header-content p {
+        color: #6c757d;
+        margin: 0;
+        font-size: 16px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        transition: transform 0.3s ease;
+        border-left: 4px solid;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-card.primary { border-left-color: #007bff; }
+    .stat-card.success { border-left-color: #28a745; }
+    .stat-card.warning { border-left-color: #ffc107; }
+    .stat-card.info { border-left-color: #17a2b8; }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: white;
+    }
+
+    .stat-card.primary .stat-icon { background: #007bff; }
+    .stat-card.success .stat-icon { background: #28a745; }
+    .stat-card.warning .stat-icon { background: #ffc107; }
+    .stat-card.info .stat-icon { background: #17a2b8; }
+
+    .stat-content h3 {
+        font-size: 28px;
+        font-weight: 700;
+        margin: 0 0 5px 0;
+        color: #2c3e50;
+    }
+
+    .stat-content p {
+        margin: 0;
+        color: #6c757d;
+        font-weight: 500;
+        font-size: 14px;
+    }
+
+    .card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+        overflow: hidden;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        padding: 20px 25px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        flex: 1;
+    }
+
+    .card-body {
+        padding: 25px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+        color: #007bff;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th {
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 14px;
+    }
+
+    .table td {
+        vertical-align: middle;
+        font-size: 14px;
+    }
+
+    .jenis-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .harga-display {
+        font-size: 16px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 5px;
+    }
+
+    .btn {
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -22px;
+        top: 0;
+        width: 30px;
+        height: 30px;
+        background: #007bff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+    }
+
+    .timeline-content {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 3px solid #007bff;
+    }
+
+    .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .timeline-body {
+        color: #6c757d;
+        font-size: 14px;
+    }
+
+    /* Pagination Styling */
+    .pagination {
+        margin: 0;
+    }
+
+    .pagination .page-link {
+        color: #007bff;
+        border: 1px solid #dee2e6;
+        padding: 8px 12px;
+        margin: 0 2px;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+
+    .pagination .page-link:hover {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+
+    .pagination .page-item.active .page-link {
+        background: #007bff;
+        border-color: #007bff;
+        color: white;
+        font-weight: 600;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        background: #f8f9fa;
+        border-color: #dee2e6;
+    }
+
+    @media (max-width: 768px) {
+        .main-content {
+            margin-left: 0;
+            padding: 20px;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .header-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+    </style>
 </head>
 <body>
     <?= $this->include('partials/sidebar_admin_pusat') ?>
@@ -53,7 +391,7 @@
                     <i class="fas fa-list"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?= $statistics['total'] ?></h3>
+                    <h3><?= esc($statistics['total'] ?? 0) ?></h3>
                     <p>Total Jenis Sampah</p>
                 </div>
             </div>
@@ -63,7 +401,7 @@
                     <i class="fas fa-check-circle"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?= $statistics['aktif'] ?></h3>
+                    <h3><?= esc($statistics['aktif'] ?? 0) ?></h3>
                     <p>Harga Aktif</p>
                 </div>
             </div>
@@ -73,7 +411,7 @@
                     <i class="fas fa-money-bill-wave"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?= $statistics['bisa_dijual'] ?></h3>
+                    <h3><?= esc($statistics['bisa_dijual'] ?? 0) ?></h3>
                     <p>Bisa Dijual</p>
                 </div>
             </div>
@@ -83,7 +421,7 @@
                     <i class="fas fa-history"></i>
                 </div>
                 <div class="stat-content">
-                    <h3><?= $logStatistics['changes_today'] ?></h3>
+                    <h3><?= esc($statistics['perubahan_hari_ini'] ?? 0) ?></h3>
                     <p>Perubahan Hari Ini</p>
                 </div>
             </div>
@@ -92,8 +430,28 @@
         <!-- Harga Sampah Table -->
         <div class="card">
             <div class="card-header">
-                <i class="fas fa-table"></i>
-                <h3>Daftar Harga Sampah</h3>
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-table"></i>
+                        <h3 class="mb-0">Daftar Harga Sampah</h3>
+                    </div>
+                    
+                    <!-- Filter Status -->
+                    <div class="btn-group" role="group">
+                        <a href="<?= base_url('/admin-pusat/manajemen-harga') ?>" 
+                           class="btn btn-sm <?= !isset($_GET['status']) ? 'btn-primary' : 'btn-outline-primary' ?>">
+                            <i class="fas fa-list"></i> Semua (<?= $statistics['total'] ?? 0 ?>)
+                        </a>
+                        <a href="<?= base_url('/admin-pusat/manajemen-harga?status=aktif') ?>" 
+                           class="btn btn-sm <?= (isset($_GET['status']) && $_GET['status'] == 'aktif') ? 'btn-success' : 'btn-outline-success' ?>">
+                            <i class="fas fa-check-circle"></i> Aktif (<?= $statistics['aktif'] ?? 0 ?>)
+                        </a>
+                        <a href="<?= base_url('/admin-pusat/manajemen-harga?status=nonaktif') ?>" 
+                           class="btn btn-sm <?= (isset($_GET['status']) && $_GET['status'] == 'nonaktif') ? 'btn-secondary' : 'btn-outline-secondary' ?>">
+                            <i class="fas fa-times-circle"></i> Nonaktif (<?= ($statistics['total'] ?? 0) - ($statistics['aktif'] ?? 0) ?>)
+                        </a>
+                    </div>
+                </div>
             </div>
             <div class="card-body">
                 <?php if (empty($hargaSampah)): ?>
@@ -119,11 +477,14 @@
                         </thead>
                         <tbody>
                             <?php foreach ($hargaSampah as $item): ?>
-                            <tr>
+                            <tr class="<?= !$item['status_aktif'] ? 'table-secondary opacity-50' : '' ?>">
                                 <td>
                                     <div class="jenis-info">
                                         <i class="fas fa-<?= getJenisIcon($item['jenis_sampah']) ?> text-primary"></i>
                                         <strong><?= htmlspecialchars($item['jenis_sampah']) ?></strong>
+                                        <?php if (!$item['status_aktif']): ?>
+                                            <span class="badge bg-secondary ms-2">Nonaktif</span>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                                 <td><?= htmlspecialchars($item['nama_jenis']) ?></td>
@@ -149,12 +510,14 @@
                                     <?php endif; ?>
                                 </td>
                                 <td>
+                                    <!-- Switch Read-Only (Hanya Tampilan Status) -->
                                     <div class="form-check form-switch">
-                                        <input class="form-check-input status-toggle" 
+                                        <input class="form-check-input" 
                                                type="checkbox" 
-                                               data-id="<?= $item['id'] ?>"
-                                               <?= $item['status_aktif'] ? 'checked' : '' ?>>
-                                        <label class="form-check-label">
+                                               <?= $item['status_aktif'] ? 'checked' : '' ?>
+                                               disabled
+                                               style="cursor: not-allowed;">
+                                        <label class="form-check-label text-muted">
                                             <?= $item['status_aktif'] ? 'Aktif' : 'Nonaktif' ?>
                                         </label>
                                     </div>
@@ -182,21 +545,97 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Pagination -->
+                <?php if ($pager): ?>
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="text-muted">
+                            <small>
+                                Menampilkan 
+                                <strong><?= count($hargaSampah) ?></strong> dari 
+                                <strong><?= $statistics['total'] ?? 0 ?></strong> total jenis sampah
+                            </small>
+                        </div>
+                        <?php if ($pager->getPageCount() > 1): ?>
+                        <div class="text-muted">
+                            <small>
+                                Halaman <strong><?= $pager->getCurrentPage() ?></strong> dari 
+                                <strong><?= $pager->getPageCount() ?></strong>
+                            </small>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <?php if ($pager->getPageCount() > 1): ?>
+                    <?php 
+                    // Get current filter status
+                    $statusFilter = $_GET['status'] ?? '';
+                    $filterParam = $statusFilter ? '&status=' . $statusFilter : '';
+                    ?>
+                    <nav aria-label="Pagination">
+                        <ul class="pagination justify-content-center">
+                            <!-- Previous Button -->
+                            <?php if ($pager->getCurrentPage() > 1): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="<?= base_url('/admin-pusat/manajemen-harga?page=' . ($pager->getCurrentPage() - 1) . $filterParam) ?>" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo; Previous</span>
+                                    </a>
+                                </li>
+                            <?php else: ?>
+                                <li class="page-item disabled">
+                                    <span class="page-link">&laquo; Previous</span>
+                                </li>
+                            <?php endif; ?>
+
+                            <!-- Page Numbers - Manual Loop -->
+                            <?php for ($i = 1; $i <= $pager->getPageCount(); $i++): ?>
+                                <?php if ($i == $pager->getCurrentPage()): ?>
+                                    <li class="page-item active">
+                                        <span class="page-link"><?= $i ?></span>
+                                    </li>
+                                <?php else: ?>
+                                    <li class="page-item">
+                                        <a class="page-link" href="<?= base_url('/admin-pusat/manajemen-harga?page=' . $i . $filterParam) ?>"><?= $i ?></a>
+                                    </li>
+                                <?php endif; ?>
+                            <?php endfor; ?>
+
+                            <!-- Next Button -->
+                            <?php if ($pager->getCurrentPage() < $pager->getPageCount()): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="<?= base_url('/admin-pusat/manajemen-harga?page=' . ($pager->getCurrentPage() + 1) . $filterParam) ?>" aria-label="Next">
+                                        <span aria-hidden="true">Next &raquo;</span>
+                                    </a>
+                                </li>
+                            <?php else: ?>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Next &raquo;</span>
+                                </li>
+                            <?php endif; ?>
+                        </ul>
+                    </nav>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>
 
         <!-- Recent Changes -->
-        <?php if (!empty($recentChanges)): ?>
+        <!-- DEBUG: recentChanges count = <?= count($recentChanges ?? []) ?> | Request: <?= $requestId ?? 'NO-ID' ?> -->
+        <!-- DEBUG: recentChanges data = <?= !empty($recentChanges) ? 'HAS DATA' : 'EMPTY' ?> -->
         <div class="card">
             <div class="card-header">
                 <i class="fas fa-history"></i>
                 <h3>Perubahan Terbaru</h3>
+                <span class="badge bg-info"><?= count($recentChanges ?? []) ?> perubahan</span>
                 <a href="<?= base_url('/admin-pusat/manajemen-harga/logs') ?>" class="btn btn-sm btn-outline-info ms-auto">
                     Lihat Semua
                 </a>
             </div>
             <div class="card-body">
+                <?php if (!empty($recentChanges)): ?>
                 <div class="timeline">
                     <?php foreach ($recentChanges as $change): ?>
                     <div class="timeline-item">
@@ -205,13 +644,13 @@
                         </div>
                         <div class="timeline-content">
                             <div class="timeline-header">
-                                <strong><?= htmlspecialchars($change['admin_nama'] ?? 'Admin') ?></strong>
+                                <strong><?= htmlspecialchars($change['admin_nama'] ?? $change['user_full_name'] ?? 'Admin') ?></strong>
                                 <small class="text-muted"><?= date('d/m/Y H:i', strtotime($change['created_at'])) ?></small>
                             </div>
                             <div class="timeline-body">
-                                <?= htmlspecialchars($change['jenis_sampah']) ?>: 
+                                <?= htmlspecialchars($change['jenis_sampah'] ?? 'N/A') ?>: 
                                 Rp <?= number_format($change['harga_lama'] ?? 0, 0, ',', '.') ?> → 
-                                Rp <?= number_format($change['harga_baru'], 0, ',', '.') ?>
+                                Rp <?= number_format($change['harga_baru'] ?? 0, 0, ',', '.') ?>
                                 <?php if (!empty($change['alasan_perubahan'])): ?>
                                     <br><small class="text-muted"><?= htmlspecialchars($change['alasan_perubahan']) ?></small>
                                 <?php endif; ?>
@@ -220,9 +659,16 @@
                     </div>
                     <?php endforeach; ?>
                 </div>
+                <?php else: ?>
+                <div class="empty-state">
+                    <i class="fas fa-history"></i>
+                    <p>Belum ada perubahan harga</p>
+                    <p class="text-muted">Perubahan harga akan muncul di sini</p>
+                    <!-- DEBUG: recentChanges is empty or null -->
+                </div>
+                <?php endif; ?>
             </div>
         </div>
-        <?php endif; ?>
     </div>
 
     <!-- Add Jenis Sampah Modal -->
@@ -718,288 +1164,8 @@
             }, 5000);
         }
     </script>
+    <!-- Mobile Menu JS -->
+    <script src="<?= base_url('/js/mobile-menu.js') ?>"></script>
+    <!-- Page rendered at: <?= date('Y-m-d H:i:s') ?> -->
 </body>
 </html>
-
-<?php
-// Helper functions
-function getJenisIcon($jenis) {
-    $icons = [
-        'Plastik' => 'wine-bottle',
-        'Kertas' => 'file-alt',
-        'Logam' => 'cog',
-        'Organik' => 'seedling',
-        'Residu' => 'trash-alt'
-    ];
-    return $icons[$jenis] ?? 'recycle';
-}
-
-function getActionIcon($status) {
-    $icons = [
-        'pending' => 'clock',
-        'approved' => 'check',
-        'rejected' => 'times',
-        'update' => 'edit'
-    ];
-    return $icons[$status] ?? 'history';
-}
-?>
-
-<style>
-body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f8f9fa;
-}
-
-.main-content {
-    margin-left: 280px;
-    padding: 30px;
-    min-height: 100vh;
-}
-
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    padding: 20px 0;
-    border-bottom: 2px solid #e9ecef;
-}
-
-.header-content h1 {
-    color: #2c3e50;
-    margin-bottom: 5px;
-    font-size: 28px;
-    font-weight: 700;
-}
-
-.header-content p {
-    color: #6c757d;
-    margin: 0;
-    font-size: 16px;
-}
-
-.header-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-.stat-card {
-    background: white;
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    transition: transform 0.3s ease;
-    border-left: 4px solid;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-}
-
-.stat-card.primary { border-left-color: #007bff; }
-.stat-card.success { border-left-color: #28a745; }
-.stat-card.warning { border-left-color: #ffc107; }
-.stat-card.info { border-left-color: #17a2b8; }
-
-.stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    color: white;
-}
-
-.stat-card.primary .stat-icon { background: #007bff; }
-.stat-card.success .stat-icon { background: #28a745; }
-.stat-card.warning .stat-icon { background: #ffc107; }
-.stat-card.info .stat-icon { background: #17a2b8; }
-
-.stat-content h3 {
-    font-size: 28px;
-    font-weight: 700;
-    margin: 0 0 5px 0;
-    color: #2c3e50;
-}
-
-.stat-content p {
-    margin: 0;
-    color: #6c757d;
-    font-weight: 500;
-    font-size: 14px;
-}
-
-.card {
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    margin-bottom: 30px;
-    overflow: hidden;
-}
-
-.card-header {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-    color: white;
-    padding: 20px 25px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.card-header h3 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    flex: 1;
-}
-
-.card-body {
-    padding: 25px;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: #6c757d;
-}
-
-.empty-state i {
-    font-size: 64px;
-    margin-bottom: 20px;
-    opacity: 0.5;
-    color: #007bff;
-}
-
-.table {
-    margin-bottom: 0;
-}
-
-.table th {
-    background: #f8f9fa;
-    border-bottom: 2px solid #dee2e6;
-    font-weight: 600;
-    color: #2c3e50;
-    font-size: 14px;
-}
-
-.table td {
-    vertical-align: middle;
-    font-size: 14px;
-}
-
-.jenis-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.harga-display {
-    font-size: 16px;
-}
-
-.action-buttons {
-    display: flex;
-    gap: 5px;
-}
-
-.btn {
-    border-radius: 8px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.btn:hover {
-    transform: translateY(-2px);
-}
-
-.timeline {
-    position: relative;
-    padding-left: 30px;
-}
-
-.timeline::before {
-    content: '';
-    position: absolute;
-    left: 15px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: #dee2e6;
-}
-
-.timeline-item {
-    position: relative;
-    margin-bottom: 20px;
-}
-
-.timeline-marker {
-    position: absolute;
-    left: -22px;
-    top: 0;
-    width: 30px;
-    height: 30px;
-    background: #007bff;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 12px;
-}
-
-.timeline-content {
-    background: #f8f9fa;
-    padding: 15px;
-    border-radius: 8px;
-    border-left: 3px solid #007bff;
-}
-
-.timeline-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.timeline-body {
-    color: #6c757d;
-    font-size: 14px;
-}
-
-@media (max-width: 768px) {
-    .main-content {
-        margin-left: 0;
-        padding: 20px;
-    }
-    
-    .page-header {
-        flex-direction: column;
-        gap: 15px;
-        align-items: flex-start;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .header-actions {
-        width: 100%;
-        justify-content: flex-start;
-    }
-}
-</style>

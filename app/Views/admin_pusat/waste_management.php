@@ -37,7 +37,7 @@ $summary = $summary ?? [];
     
     <div class="main-content">
         <div class="page-header">
-            <h1><i class="fas fa-clipboard-check"></i> Waste Management</h1>
+            <h1><i class="fas fa-clipboard-check"></i> Manajemen Data Sampah</h1>
             <p>Kelola dan monitor data sampah dari semua unit</p>
         </div>
 

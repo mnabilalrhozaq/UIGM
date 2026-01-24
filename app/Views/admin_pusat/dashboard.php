@@ -13,22 +13,28 @@ $wasteByType = $wasteByType ?? [];
 /**
  * Helper function untuk menampilkan nilai stats dengan fallback
  */
-function displayStat($stats, $key, $default = 0) {
-    return isset($stats[$key]) ? $stats[$key] : $default;
+if (!function_exists('displayStat')) {
+    function displayStat($stats, $key, $default = 0) {
+        return isset($stats[$key]) ? $stats[$key] : $default;
+    }
 }
 
 /**
  * Format number untuk display
  */
-function formatNumber($number) {
-    return number_format($number, 0, ',', '.');
+if (!function_exists('formatNumber')) {
+    function formatNumber($number) {
+        return number_format($number, 0, ',', '.');
+    }
 }
 
 /**
  * Format currency untuk display
  */
-function formatCurrency($amount) {
-    return 'Rp ' . number_format($amount, 0, ',', '.');
+if (!function_exists('formatCurrency')) {
+    function formatCurrency($amount) {
+        return 'Rp ' . number_format($amount, 0, ',', '.');
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -131,7 +137,6 @@ function formatCurrency($amount) {
                                             <th>Berat (kg)</th>
                                             <th>Nilai</th>
                                             <th>Status</th>
-                                            <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -139,7 +144,7 @@ function formatCurrency($amount) {
                                         <tr>
                                             <td><?= $no++ ?></td>
                                             <td>
-                                                <small><?= $submission['tanggal_input'] ?? date('d/m/Y', strtotime($submission['created_at'])) ?></small>
+                                                <small><?= date('d/m/Y', strtotime($submission['created_at'])) ?></small>
                                             </td>
                                             <td>
                                                 <strong><?= htmlspecialchars($submission['nama_unit'] ?? 'N/A') ?></strong>
@@ -152,34 +157,28 @@ function formatCurrency($amount) {
                                                 <?php if ($submission['kategori_sampah'] === 'bisa_dijual'): ?>
                                                     <strong class="text-success"><?= formatCurrency($submission['nilai_rupiah'] ?? 0) ?></strong>
                                                 <?php else: ?>
-                                                    <span class="text-muted">-</span>
+                                                    <span class="text-muted">Rp 0</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
                                                 <?php 
                                                 $statusBadge = [
                                                     'draft' => 'secondary',
-                                                    'dikirim' => 'info',
+                                                    'dikirim' => 'warning',
                                                     'disetujui' => 'success',
-                                                    'perlu_revisi' => 'warning'
+                                                    'ditolak' => 'danger'
                                                 ];
                                                 $badgeClass = $statusBadge[$submission['status']] ?? 'secondary';
                                                 $statusText = [
                                                     'draft' => 'Draft',
                                                     'dikirim' => 'Dikirim',
-                                                    'disetujui' => 'Disetujui',
-                                                    'perlu_revisi' => 'Perlu Revisi'
+                                                    'disetujui' => 'Setujui',
+                                                    'ditolak' => 'Tolak'
                                                 ];
                                                 ?>
                                                 <span class="badge bg-<?= $badgeClass ?>">
                                                     <?= $statusText[$submission['status']] ?? ucfirst($submission['status']) ?>
                                                 </span>
-                                            </td>
-                                            <td>
-                                                <a href="<?= base_url('/admin-pusat/waste') ?>" 
-                                                   class="btn btn-sm btn-outline-primary" title="Lihat Detail">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
                                             </td>
                                         </tr>
                                         <?php endforeach; ?>
@@ -315,87 +314,6 @@ function formatCurrency($amount) {
                 </div>
             </div>
         </div>
-
-        <!-- Waste by Type Summary -->
-        <?php if (!empty($wasteByType)): ?>
-        <div class="card">
-            <div class="card-header">
-                <h3><i class="fas fa-chart-pie"></i> Ringkasan Waste Management per Jenis</h3>
-                <div class="card-actions">
-                    <?php if (isset($pager) && $pager['totalPages'] > 1): ?>
-                        <span class="text-white me-3">
-                            Halaman <?= $pager['currentPage'] ?> dari <?= $pager['totalPages'] ?>
-                        </span>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="waste-grid">
-                    <?php foreach ($wasteByType as $waste): ?>
-                    <div class="waste-item">
-                        <div class="waste-header">
-                            <h5><?= htmlspecialchars($waste['nama_jenis']) ?></h5>
-                            <span class="waste-total"><?= $waste['total_records'] ?> records</span>
-                        </div>
-                        <?php if (!empty($waste['jenis_sampah'])): ?>
-                            <p class="text-muted mb-2" style="font-size: 12px;">
-                                <i class="fas fa-tag"></i> Kategori: <?= htmlspecialchars($waste['jenis_sampah']) ?>
-                            </p>
-                        <?php endif; ?>
-                        <div class="waste-stats">
-                            <div class="waste-stat">
-                                <span class="stat-label">Total Berat:</span>
-                                <strong><?= number_format($waste['total_berat'], 2) ?> kg</strong>
-                            </div>
-                            <div class="waste-stat">
-                                <span class="stat-label">Total Nilai:</span>
-                                <strong><?= formatCurrency($waste['total_nilai']) ?></strong>
-                            </div>
-                            <div class="waste-stat">
-                                <span class="stat-label">Disetujui:</span>
-                                <span class="badge bg-success"><?= $waste['disetujui'] ?></span>
-                            </div>
-                            <div class="waste-stat">
-                                <span class="stat-label">Menunggu:</span>
-                                <span class="badge bg-warning"><?= $waste['menunggu_review'] ?></span>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-                
-                <!-- Pagination -->
-                <?php if (isset($pager) && $pager['totalPages'] > 1): ?>
-                <div class="pagination-wrapper mt-4">
-                    <nav aria-label="Waste type pagination">
-                        <ul class="pagination justify-content-center">
-                            <!-- Previous -->
-                            <li class="page-item <?= $pager['currentPage'] <= 1 ? 'disabled' : '' ?>">
-                                <a class="page-link" href="<?= base_url('/admin-pusat/dashboard?page=' . ($pager['currentPage'] - 1)) ?>" aria-label="Previous">
-                                    <span aria-hidden="true">&laquo;</span>
-                                </a>
-                            </li>
-                            
-                            <!-- Page Numbers -->
-                            <?php for ($i = 1; $i <= $pager['totalPages']; $i++): ?>
-                                <li class="page-item <?= $i == $pager['currentPage'] ? 'active' : '' ?>">
-                                    <a class="page-link" href="<?= base_url('/admin-pusat/dashboard?page=' . $i) ?>"><?= $i ?></a>
-                                </li>
-                            <?php endfor; ?>
-                            
-                            <!-- Next -->
-                            <li class="page-item <?= $pager['currentPage'] >= $pager['totalPages'] ? 'disabled' : '' ?>">
-                                <a class="page-link" href="<?= base_url('/admin-pusat/dashboard?page=' . ($pager['currentPage'] + 1)) ?>" aria-label="Next">
-                                    <span aria-hidden="true">&raquo;</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php endif; ?>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

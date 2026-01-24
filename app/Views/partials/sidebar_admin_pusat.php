@@ -22,7 +22,7 @@
             
             <a href="<?= base_url('/admin-pusat/waste') ?>" class="menu-item <?= (strpos(current_url(), '/admin-pusat/waste') !== false) ? 'active' : '' ?>">
                 <i class="fas fa-trash-alt"></i>
-                <span>Waste Management</span>
+                <span>Manajemen Data Sampah</span>
             </a>
             
             <a href="<?= base_url('/admin-pusat/manajemen-harga') ?>" class="menu-item <?= (strpos(current_url(), '/admin-pusat/manajemen-harga') !== false) ? 'active' : '' ?>">
@@ -32,13 +32,12 @@
             
             <a href="<?= base_url('/admin-pusat/user-management') ?>" class="menu-item <?= (strpos(current_url(), '/admin-pusat/user-management') !== false) ? 'active' : '' ?>">
                 <i class="fas fa-users"></i>
-                <span>User Management</span>
+                <span>Manajemen Pengguna</span>
             </a>
             
             <a href="<?= base_url('/admin-pusat/feature-toggle') ?>" class="menu-item <?= (strpos(current_url(), '/admin-pusat/feature-toggle') !== false) ? 'active' : '' ?>">
                 <i class="fas fa-toggle-on"></i>
-                <span>Feature Toggle</span>
-                <small class="menu-subtitle">Control UI Features</small>
+                <span>Fitur Sistem</span>
             </a>
         </div>
 

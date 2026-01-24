@@ -99,11 +99,11 @@ class DashboardService
             // Count submissions by status
             $menungguReview = $this->wasteModel->where('status', 'dikirim')->countAllResults(false);
             $disetujui = $this->wasteModel->where('status', 'disetujui')->countAllResults(false);
-            $perluRevisi = $this->wasteModel->where('status', 'perlu_revisi')->countAllResults(false);
+            $ditolak = $this->wasteModel->where('status', 'ditolak')->countAllResults(false);
             
             // Calculate total weight and value (approved only)
             $approvedWaste = $this->wasteModel
-                ->select('SUM(berat) as total_berat, SUM(nilai_total) as total_nilai')
+                ->select('SUM(berat_kg) as total_berat, SUM(nilai_rupiah) as total_nilai')
                 ->where('status', 'disetujui')
                 ->first();
             
@@ -114,7 +114,7 @@ class DashboardService
                 'total_users' => $totalUsers,
                 'menunggu_review' => $menungguReview,
                 'disetujui' => $disetujui,
-                'perlu_revisi' => $perluRevisi,
+                'ditolak' => $ditolak,
                 'total_berat' => (float)$totalBerat,
                 'total_nilai' => (float)$totalNilai
             ];
@@ -126,7 +126,7 @@ class DashboardService
                 'total_users' => 0,
                 'menunggu_review' => 0,
                 'disetujui' => 0,
-                'perlu_revisi' => 0,
+                'ditolak' => 0,
                 'total_berat' => 0,
                 'total_nilai' => 0
             ];
@@ -135,6 +135,7 @@ class DashboardService
 
     /**
      * Get recent submissions (pending review)
+     * Only show data with status 'dikirim' OR data that was approved/rejected less than 5 minutes ago
      * 
      * @param int $limit Number of items to retrieve
      * @return array
@@ -143,9 +144,17 @@ class DashboardService
     {
         try {
             $submissions = $this->wasteModel
-                ->select('waste_management.*, users.nama_lengkap as user_name, users.username, users.role')
+                ->select('waste_management.*, users.nama_lengkap as user_name, users.username, users.role, units.nama_unit')
                 ->join('users', 'users.id = waste_management.user_id', 'left')
-                ->where('waste_management.status', 'dikirim')
+                ->join('units', 'units.id = waste_management.unit_id', 'left')
+                ->groupStart()
+                    ->where('waste_management.status', 'dikirim')
+                    ->orGroupStart()
+                        ->whereIn('waste_management.status', ['disetujui', 'ditolak'])
+                        ->where('waste_management.action_timestamp IS NOT NULL')
+                        ->where('waste_management.action_timestamp >=', date('Y-m-d H:i:s', strtotime('-5 minutes')))
+                    ->groupEnd()
+                ->groupEnd()
                 ->orderBy('waste_management.created_at', 'DESC')
                 ->limit($limit)
                 ->findAll();
@@ -201,7 +210,7 @@ class DashboardService
         try {
             // Get waste type summary with aggregation
             $query = $this->wasteModel
-                ->select('jenis_sampah, COUNT(*) as jumlah_data, SUM(berat) as total_berat, SUM(nilai_total) as total_nilai')
+                ->select('jenis_sampah, COUNT(*) as jumlah_data, SUM(berat_kg) as total_berat, SUM(nilai_rupiah) as total_nilai')
                 ->where('status', 'disetujui')
                 ->groupBy('jenis_sampah')
                 ->orderBy('total_berat', 'DESC');

@@ -78,8 +78,13 @@ class ReviewService
             
             $db->table('laporan_waste')->insert($laporanData);
             
-            // 2. Delete dari waste_management
-            $this->wasteModel->delete($id);
+            // 2. Update status and set action_timestamp (will be auto-deleted after 5 minutes)
+            $this->wasteModel->update($id, [
+                'status' => 'disetujui',
+                'action_timestamp' => date('Y-m-d H:i:s'),
+                'catatan_admin' => $data['notes'] ?? 'Disetujui oleh admin',
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
             
             $db->transComplete();
             
@@ -90,7 +95,7 @@ class ReviewService
             // Send notification to user (if notification system exists)
             $this->sendApprovalNotification($waste);
             
-            return ['success' => true, 'message' => 'Data waste berhasil disetujui dan dipindahkan ke laporan'];
+            return ['success' => true, 'message' => 'Data waste berhasil disetujui'];
 
         } catch (\Exception $e) {
             $db->transRollback();
@@ -142,8 +147,13 @@ class ReviewService
             
             $db->table('laporan_waste')->insert($laporanData);
             
-            // 2. Delete dari waste_management
-            $this->wasteModel->delete($id);
+            // 2. Update status and set action_timestamp (will be auto-deleted after 5 minutes)
+            $this->wasteModel->update($id, [
+                'status' => 'ditolak',
+                'action_timestamp' => date('Y-m-d H:i:s'),
+                'catatan_admin' => $data['notes'],
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
             
             $db->transComplete();
             
@@ -154,7 +164,7 @@ class ReviewService
             // Send notification to user (if notification system exists)
             $this->sendRejectionNotification($waste, $data['notes']);
             
-            return ['success' => true, 'message' => 'Data waste berhasil ditolak dan dipindahkan ke laporan'];
+            return ['success' => true, 'message' => 'Data waste berhasil ditolak'];
 
         } catch (\Exception $e) {
             $db->transRollback();

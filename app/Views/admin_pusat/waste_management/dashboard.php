@@ -78,7 +78,7 @@
                         </a>
                         <a class="nav-link active" href="<?= base_url('admin-pusat/waste-management') ?>">
                             <i class="fas fa-trash-alt me-2"></i>
-                            Waste Management
+                            Manajemen Data Sampah
                         </a>
                         <a class="nav-link" href="<?= base_url('admin-pusat/monitoring') ?>">
                             <i class="fas fa-chart-line me-2"></i>

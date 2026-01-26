@@ -9,7 +9,7 @@
     <link href="<?= base_url('assets/css/dashboard.css') ?>" rel="stylesheet">
 </head>
 <body>
-    <?= $this->include('partials/sidebar_admin_pusat') ?>
+    <?= $this->include('partials/sidebar') ?>
     
     <div class="main-content">
         <div class="page-header">

@@ -42,7 +42,7 @@ if (!function_exists('formatNumber')) {
     <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
-    <?= $this->include('partials/sidebar_pengelola_tps') ?>
+    <?= $this->include('partials/sidebar') ?>
     
     <div class="main-content">
         <div class="dashboard-header">
@@ -65,7 +65,11 @@ if (!function_exists('formatNumber')) {
         </div>
         <?php endif; ?>
 
-        <!-- Statistics Cards -->
+        <!-- Disabled Features Alert -->
+        <?= renderDisabledFeaturesAlert('pengelola_tps') ?>
+
+        <!-- Statistics Cards - Feature Toggle: dashboard_statistics_cards -->
+        <?php if (isFeatureEnabled('dashboard_statistics_cards', 'pengelola_tps')): ?>
         <div class="stats-grid">
             <div class="stat-card primary">
                 <div class="stat-icon">
@@ -106,9 +110,21 @@ if (!function_exists('formatNumber')) {
                     <p>Draft</p>
                 </div>
             </div>
+            
+            <div class="stat-card success">
+                <div class="stat-icon">
+                    <i class="fas fa-weight-hanging"></i>
+                </div>
+                <div class="stat-content">
+                    <h3><?= number_format(displayStat($wasteOverallStats, 'total_berat'), 3, ',', '.') ?> kg</h3>
+                    <p>Total Berat</p>
+                </div>
+            </div>
         </div>
+        <?php endif; ?>
 
-        <!-- Recent Waste Data -->
+        <!-- Recent Waste Data - Feature Toggle: dashboard_waste_summary -->
+        <?php if (isFeatureEnabled('dashboard_waste_summary', 'pengelola_tps')): ?>
         <!-- Ringkasan Waste Management -->
         <div class="card">
             <div class="card-header">
@@ -117,9 +133,11 @@ if (!function_exists('formatNumber')) {
                     <a href="<?= base_url('/pengelola-tps/waste') ?>" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus"></i> Input Data
                     </a>
+                    <?php if (isFeatureEnabled('export_data', 'pengelola_tps')): ?>
                     <a href="<?= base_url('/pengelola-tps/waste/export-pdf') ?>" class="btn btn-danger btn-sm" target="_blank">
                         <i class="fas fa-file-pdf"></i> Export PDF
                     </a>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="card-body">
@@ -197,9 +215,10 @@ if (!function_exists('formatNumber')) {
                 <?php endif; ?>
             </div>
         </div>
+        <?php endif; ?>
 
-        <!-- Monthly Summary Chart -->
-        <?php if (!empty($monthly_summary)): ?>
+        <!-- Monthly Summary Chart - Feature Toggle: dashboard_charts -->
+        <?php if (isFeatureEnabled('dashboard_charts', 'pengelola_tps') && !empty($monthly_summary)): ?>
         <div class="card">
             <div class="card-header">
                 <h3><i class="fas fa-chart-bar"></i> Ringkasan Bulanan <?= date('Y') ?></h3>

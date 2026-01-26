@@ -35,7 +35,7 @@ $stats = $stats ?? [];
     <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
-    <?= $this->include('partials/sidebar_user') ?>
+    <?= $this->include('partials/sidebar') ?>
     
     <div class="main-content">
         <div class="page-header">
@@ -97,6 +97,16 @@ $stats = $stats ?? [];
                 <div class="stat-content">
                     <h3><?= $stats['approved_count'] ?? 0 ?></h3>
                     <p>Disetujui</p>
+                </div>
+            </div>
+            
+            <div class="stat-card secondary">
+                <div class="stat-icon">
+                    <i class="fas fa-file"></i>
+                </div>
+                <div class="stat-content">
+                    <h3><?= $stats['draft_count'] ?? 0 ?></h3>
+                    <p>Draft</p>
                 </div>
             </div>
             
@@ -813,6 +823,7 @@ body {
 .stat-card.success { border-left-color: #28a745; }
 .stat-card.warning { border-left-color: #ffc107; }
 .stat-card.info { border-left-color: #17a2b8; }
+.stat-card.secondary { border-left-color: #6c757d; }
 
 .stat-icon {
     width: 60px;
@@ -830,6 +841,7 @@ body {
 .stat-card.success .stat-icon { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
 .stat-card.warning .stat-icon { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
 .stat-card.info .stat-icon { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+.stat-card.secondary .stat-icon { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
 
 .stat-content {
     flex: 1;

@@ -158,3 +158,89 @@ if (!function_exists('featureEnabled')) {
         return isFeatureEnabled($feature, $role);
     }
 }
+
+if (!function_exists('getDisabledFeatures')) {
+    /**
+     * Get list of disabled features for a specific role
+     * 
+     * @param string|null $role User role (optional)
+     * @return array Array of disabled feature names
+     */
+    function getDisabledFeatures(?string $role = null): array
+    {
+        try {
+            $model = new \App\Models\FeatureToggleModel();
+            
+            // Get all features
+            $allFeatures = $role ? $model->getByRole($role) : $model->findAll();
+            
+            // Filter only disabled features
+            $disabledFeatures = [];
+            foreach ($allFeatures as $feature) {
+                // Check if feature is disabled
+                if (!$feature['is_enabled']) {
+                    // Check if role has access to this feature
+                    if ($role) {
+                        $targetRoles = json_decode($feature['target_roles'], true) ?? [];
+                        if (in_array($role, $targetRoles)) {
+                            $disabledFeatures[] = $feature['feature_name'];
+                        }
+                    } else {
+                        $disabledFeatures[] = $feature['feature_name'];
+                    }
+                }
+            }
+            
+            return $disabledFeatures;
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Get disabled features error: ' . $e->getMessage());
+            return [];
+        }
+    }
+}
+
+if (!function_exists('hasDisabledFeatures')) {
+    /**
+     * Check if there are any disabled features for a role
+     * 
+     * @param string|null $role User role (optional)
+     * @return bool
+     */
+    function hasDisabledFeatures(?string $role = null): bool
+    {
+        return count(getDisabledFeatures($role)) > 0;
+    }
+}
+
+if (!function_exists('renderDisabledFeaturesAlert')) {
+    /**
+     * Render alert for disabled features
+     * 
+     * @param string|null $role User role (optional)
+     * @return string HTML alert
+     */
+    function renderDisabledFeaturesAlert(?string $role = null): string
+    {
+        $disabledFeatures = getDisabledFeatures($role);
+        
+        if (empty($disabledFeatures)) {
+            return '';
+        }
+        
+        $html = '<div class="alert alert-info alert-dismissible fade show disabled-features-alert" role="alert">';
+        $html .= '<i class="fas fa-info-circle"></i> ';
+        
+        if (count($disabledFeatures) === 1) {
+            $html .= '<strong>' . htmlspecialchars($disabledFeatures[0]) . '</strong> sedang dimatikan oleh admin.';
+        } else {
+            $html .= 'Beberapa fitur sedang dimatikan oleh admin: ';
+            $html .= '<strong>' . htmlspecialchars(implode(', ', $disabledFeatures)) . '</strong>';
+        }
+        
+        $html .= '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+        $html .= '</div>';
+        
+        return $html;
+    }
+}

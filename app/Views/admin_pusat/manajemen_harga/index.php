@@ -348,13 +348,13 @@ if (!function_exists('getActionIcon')) {
     </style>
 </head>
 <body>
-    <?= $this->include('partials/sidebar_admin_pusat') ?>
+    <?= $this->include('partials/sidebar') ?>
     
     <div class="main-content">
         <div class="page-header">
             <div class="header-content">
-                <h1><i class="fas fa-recycle"></i> Manajemen Sampah</h1>
-                <p>Kelola harga sampah secara terpusat untuk seluruh sistem</p>
+                <h1><i class="fas fa-recycle"></i> Manajemen Jenis Sampah</h1>
+                <p>Kelola jenis dan harga sampah secara terpusat untuk seluruh sistem</p>
             </div>
             
             <div class="header-actions">

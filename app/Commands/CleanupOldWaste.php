@@ -9,20 +9,20 @@ class CleanupOldWaste extends BaseCommand
 {
     protected $group       = 'Maintenance';
     protected $name        = 'waste:cleanup';
-    protected $description = 'Delete waste data that has been approved/rejected for more than 5 minutes';
+    protected $description = 'Delete waste data that has been approved/rejected for more than 2 days';
 
     public function run(array $params)
     {
         $db = \Config\Database::connect();
         
         try {
-            // Delete data yang sudah disetujui/ditolak lebih dari 5 menit
-            $fiveMinutesAgo = date('Y-m-d H:i:s', strtotime('-5 minutes'));
+            // Delete data yang sudah disetujui/ditolak lebih dari 2 hari
+            $twoDaysAgo = date('Y-m-d H:i:s', strtotime('-2 days'));
             
             $result = $db->table('waste_management')
                 ->whereIn('status', ['disetujui', 'ditolak'])
                 ->where('action_timestamp IS NOT NULL')
-                ->where('action_timestamp <', $fiveMinutesAgo)
+                ->where('action_timestamp <', $twoDaysAgo)
                 ->delete();
             
             if ($result) {

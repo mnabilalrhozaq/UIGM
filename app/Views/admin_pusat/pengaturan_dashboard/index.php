@@ -67,7 +67,7 @@
     </style>
 </head>
 <body>
-    <?= $this->include('partials/sidebar_admin_pusat') ?>
+    <?= $this->include('partials/sidebar') ?>
     
     <div class="main-content">
         <div class="dashboard-header">

@@ -12,7 +12,7 @@
     <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
-    <?= $this->include('partials/sidebar_pengelola_tps') ?>
+    <?= $this->include('partials/sidebar') ?>
     
     <div class="main-content">
         <div class="page-header">

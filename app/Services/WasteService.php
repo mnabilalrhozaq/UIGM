@@ -300,9 +300,9 @@ class WasteService
 
         return [
             'total_entries' => $this->wasteModel->where('unit_id', $unitId)->countAllResults(),
-            'pending_count' => $this->wasteModel->where('unit_id', $unitId)->where('status', 'pending')->countAllResults(),
-            'approved_count' => $this->wasteModel->where('unit_id', $unitId)->where('status', 'approved')->countAllResults(),
-            'rejected_count' => $this->wasteModel->where('unit_id', $unitId)->where('status', 'rejected')->countAllResults(),
+            'pending_count' => $this->wasteModel->where('unit_id', $unitId)->whereIn('status', ['dikirim', 'review'])->countAllResults(),
+            'approved_count' => $this->wasteModel->where('unit_id', $unitId)->where('status', 'disetujui')->countAllResults(),
+            'rejected_count' => $this->wasteModel->where('unit_id', $unitId)->where('status', 'ditolak')->countAllResults(),
             'total_weight' => $this->wasteModel
                 ->selectSum('berat_kg')
                 ->where('unit_id', $unitId)

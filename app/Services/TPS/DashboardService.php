@@ -149,6 +149,13 @@ class DashboardService
         try {
             $db = \Config\Database::connect();
             
+            // Get total berat
+            $totalBeratQuery = $db->table('waste_management')
+                ->selectSum('berat_kg')
+                ->where('unit_id', $tpsId)
+                ->get()
+                ->getRow();
+            
             return [
                 'disetujui' => $db->table('waste_management')
                     ->where('unit_id', $tpsId)
@@ -165,11 +172,12 @@ class DashboardService
                 'draft' => $db->table('waste_management')
                     ->where('unit_id', $tpsId)
                     ->where('status', 'draft')
-                    ->countAllResults()
+                    ->countAllResults(),
+                'total_berat' => $totalBeratQuery->berat_kg ?? 0
             ];
         } catch (\Exception $e) {
             log_message('error', 'Error getting waste overall stats: ' . $e->getMessage());
-            return ['disetujui' => 0, 'ditolak' => 0, 'menunggu_review' => 0, 'draft' => 0];
+            return ['disetujui' => 0, 'ditolak' => 0, 'menunggu_review' => 0, 'draft' => 0, 'total_berat' => 0];
         }
     }
     

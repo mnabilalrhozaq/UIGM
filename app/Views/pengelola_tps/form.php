@@ -8,7 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <?= $this->include('partials/sidebar_pengelola_tps') ?>
+    <?= $this->include('partials/sidebar') ?>
     
     <div class="main-content">
         <div class="page-header">

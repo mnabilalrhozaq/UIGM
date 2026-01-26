@@ -24,12 +24,12 @@ if (!function_exists('formatCurrency')) {
     <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
-    <?= $this->include('partials/sidebar_admin_pusat') ?>
+    <?= $this->include('partials/sidebar') ?>
     
     <div class="main-content">
         <div class="page-header">
-            <h1><i class="fas fa-chart-bar"></i> Laporan Waste</h1>
-            <p>Laporan data sampah yang sudah disetujui dan ditolak</p>
+            <h1><i class="fas fa-chart-bar"></i> Laporan Data Sampah</h1>
+            <p>Laporan lengkap data sampah yang sudah disetujui dan ditolak</p>
         </div>
 
         <!-- Flash Messages -->

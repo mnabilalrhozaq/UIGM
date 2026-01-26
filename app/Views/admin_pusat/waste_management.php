@@ -33,12 +33,12 @@ $summary = $summary ?? [];
     <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
-    <?= $this->include('partials/sidebar_admin_pusat') ?>
+    <?= $this->include('partials/sidebar') ?>
     
     <div class="main-content">
         <div class="page-header">
             <h1><i class="fas fa-clipboard-check"></i> Manajemen Data Sampah</h1>
-            <p>Kelola dan monitor data sampah dari semua unit</p>
+            <p>Review dan kelola data sampah yang dikirim dari semua unit</p>
         </div>
 
         <!-- Flash Messages -->

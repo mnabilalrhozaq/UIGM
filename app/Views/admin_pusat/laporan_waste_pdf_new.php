@@ -220,6 +220,72 @@
         </tbody>
     </table>
 
+    <!-- DATA DISETUJUI -->
+    <?php if (!empty($data['data_disetujui'])): ?>
+    <div class="section-title">DATA DISETUJUI (<?= count($data['data_disetujui']) ?>)</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">No</th>
+                <th style="width: 12%;">Tanggal</th>
+                <th style="width: 18%;">Unit</th>
+                <th style="width: 15%;">Jenis Sampah</th>
+                <th style="width: 10%;" class="text-right">Berat (kg)</th>
+                <th style="width: 8%;">Satuan</th>
+                <th style="width: 15%;" class="text-right">Nilai (Rp)</th>
+                <th style="width: 12%;">Direview Oleh</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($data['data_disetujui'] as $index => $item): ?>
+            <tr>
+                <td class="text-center"><?= $index + 1 ?></td>
+                <td><?= date('d/m/Y H:i', strtotime($item['tanggal_input'] ?? $item['created_at'])) ?></td>
+                <td><?= $item['nama_unit'] ?? 'N/A' ?></td>
+                <td><?= $item['jenis_sampah'] ?? 'N/A' ?></td>
+                <td class="text-right"><?= number_format($item['berat_kg'] ?? 0, 2) ?></td>
+                <td><?= $item['satuan'] ?? 'kg' ?></td>
+                <td class="text-right"><?= $item['nilai_rupiah'] ? 'Rp ' . number_format($item['nilai_rupiah'], 0, ',', '.') : 'Rp 0' ?></td>
+                <td><?= $item['reviewed_by_name'] ?? '-' ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php endif; ?>
+
+    <!-- DATA DITOLAK -->
+    <?php if (!empty($data['data_ditolak'])): ?>
+    <div class="section-title">DATA DITOLAK (<?= count($data['data_ditolak']) ?>)</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">No</th>
+                <th style="width: 12%;">Tanggal</th>
+                <th style="width: 18%;">Unit</th>
+                <th style="width: 15%;">Jenis Sampah</th>
+                <th style="width: 10%;" class="text-right">Berat (kg)</th>
+                <th style="width: 8%;">Satuan</th>
+                <th style="width: 15%;">Alasan Ditolak</th>
+                <th style="width: 12%;">Direview Oleh</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($data['data_ditolak'] as $index => $item): ?>
+            <tr>
+                <td class="text-center"><?= $index + 1 ?></td>
+                <td><?= date('d/m/Y H:i', strtotime($item['tanggal_input'] ?? $item['created_at'])) ?></td>
+                <td><?= $item['nama_unit'] ?? 'N/A' ?></td>
+                <td><?= $item['jenis_sampah'] ?? 'N/A' ?></td>
+                <td class="text-right"><?= number_format($item['berat_kg'] ?? 0, 2) ?></td>
+                <td><?= $item['satuan'] ?? 'kg' ?></td>
+                <td><?= $item['keterangan'] ?? '-' ?></td>
+                <td><?= $item['reviewed_by_name'] ?? '-' ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php endif; ?>
+
     <div class="footer">
         <p>Dokumen ini digenerate otomatis oleh sistem pada <?= $generated_at ?></p>
         <p>UI GreenMetric POLBAN - Waste Management System</p>

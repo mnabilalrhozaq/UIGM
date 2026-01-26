@@ -13,12 +13,12 @@
     <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
-    <?= $this->include('partials/sidebar_admin_pusat') ?>
+    <?= $this->include('partials/sidebar') ?>
     
     <div class="main-content">
         <div class="dashboard-header">
-            <h1><i class="fas fa-toggle-on"></i> Feature Toggle Management</h1>
-            <p>Kontrol fitur dan komponen dashboard User dan TPS</p>
+            <h1><i class="fas fa-toggle-on"></i> Kelola Fitur</h1>
+            <p>Kontrol dan atur fitur yang tersedia untuk User dan TPS</p>
         </div>
 
         <!-- Statistics Cards -->

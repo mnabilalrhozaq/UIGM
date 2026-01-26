@@ -36,7 +36,7 @@ helper('feature');
     <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
-    <?= $this->include('partials/sidebar_user') ?>
+    <?= $this->include('partials/sidebar') ?>
     
     <div class="main-content">
         <div class="dashboard-header">
@@ -68,6 +68,9 @@ helper('feature');
             <?= session()->getFlashdata('error') ?>
         </div>
         <?php endif; ?>
+
+        <!-- Disabled Features Alert -->
+        <?= renderDisabledFeaturesAlert('user') ?>
 
         <!-- Statistics Cards - Feature Toggle: dashboard_statistics_cards -->
         <?php if (isFeatureEnabled('dashboard_statistics_cards', 'user')): ?>
@@ -109,6 +112,16 @@ helper('feature');
                 <div class="stat-content">
                     <h3><?= displayStat($wasteOverallStats, 'draft') ?></h3>
                     <p>Draft</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <i class="fas fa-weight-hanging"></i>
+                </div>
+                <div class="stat-content">
+                    <h3><?= number_format(displayStat($wasteOverallStats, 'total_berat'), 3, ',', '.') ?> kg</h3>
+                    <p>Total Berat</p>
                 </div>
             </div>
         </div>
@@ -383,6 +396,7 @@ body {
 .stat-icon.red { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
 .stat-icon.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
 .stat-icon.purple { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+.stat-icon.orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
 
 .stat-content h3 {
     font-size: 32px;

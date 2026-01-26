@@ -78,7 +78,7 @@ class ReviewService
             
             $db->table('laporan_waste')->insert($laporanData);
             
-            // 2. Update status and set action_timestamp (will be auto-deleted after 5 minutes)
+            // 2. Update status and set action_timestamp (will be auto-deleted after 2 days)
             $this->wasteModel->update($id, [
                 'status' => 'disetujui',
                 'action_timestamp' => date('Y-m-d H:i:s'),
@@ -147,7 +147,7 @@ class ReviewService
             
             $db->table('laporan_waste')->insert($laporanData);
             
-            // 2. Update status and set action_timestamp (will be auto-deleted after 5 minutes)
+            // 2. Update status and set action_timestamp (will be auto-deleted after 2 days)
             $this->wasteModel->update($id, [
                 'status' => 'ditolak',
                 'action_timestamp' => date('Y-m-d H:i:s'),

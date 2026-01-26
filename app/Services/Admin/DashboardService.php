@@ -135,7 +135,7 @@ class DashboardService
 
     /**
      * Get recent submissions (pending review)
-     * Only show data with status 'dikirim' OR data that was approved/rejected less than 5 minutes ago
+     * Only show data with status 'dikirim' OR data that was approved/rejected less than 2 days ago
      * 
      * @param int $limit Number of items to retrieve
      * @return array
@@ -152,7 +152,7 @@ class DashboardService
                     ->orGroupStart()
                         ->whereIn('waste_management.status', ['disetujui', 'ditolak'])
                         ->where('waste_management.action_timestamp IS NOT NULL')
-                        ->where('waste_management.action_timestamp >=', date('Y-m-d H:i:s', strtotime('-5 minutes')))
+                        ->where('waste_management.action_timestamp >=', date('Y-m-d H:i:s', strtotime('-2 days')))
                     ->groupEnd()
                 ->groupEnd()
                 ->orderBy('waste_management.created_at', 'DESC')

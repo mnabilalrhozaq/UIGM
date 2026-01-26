@@ -146,8 +146,13 @@ class WasteService
             
             $db->table('laporan_waste')->insert($laporanData);
             
-            // 2. Delete dari waste_management
-            $this->wasteModel->delete($id);
+            // 2. Update status and set action_timestamp (will be auto-deleted after 2 days)
+            $this->wasteModel->update($id, [
+                'status' => 'disetujui',
+                'action_timestamp' => date('Y-m-d H:i:s'),
+                'catatan_admin' => $data['catatan'] ?? 'Disetujui oleh admin',
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
             
             $db->transComplete();
             
@@ -155,7 +160,7 @@ class WasteService
                 return ['success' => false, 'message' => 'Gagal menyetujui data sampah'];
             }
 
-            return ['success' => true, 'message' => 'Data sampah berhasil disetujui dan dipindahkan ke laporan'];
+            return ['success' => true, 'message' => 'Data sampah berhasil disetujui'];
 
         } catch (\Exception $e) {
             $db->transRollback();
@@ -208,8 +213,13 @@ class WasteService
             
             $db->table('laporan_waste')->insert($laporanData);
             
-            // 2. Delete dari waste_management
-            $this->wasteModel->delete($id);
+            // 2. Update status and set action_timestamp (will be auto-deleted after 2 days)
+            $this->wasteModel->update($id, [
+                'status' => 'ditolak',
+                'action_timestamp' => date('Y-m-d H:i:s'),
+                'catatan_admin' => $data['catatan'],
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
             
             $db->transComplete();
             
@@ -217,7 +227,7 @@ class WasteService
                 return ['success' => false, 'message' => 'Gagal menolak data sampah'];
             }
 
-            return ['success' => true, 'message' => 'Data sampah berhasil ditolak dan dipindahkan ke laporan'];
+            return ['success' => true, 'message' => 'Data sampah berhasil ditolak'];
 
         } catch (\Exception $e) {
             $db->transRollback();
@@ -269,9 +279,20 @@ class WasteService
             $offset = ($page - 1) * $perPage;
             
             // Query utama dengan pagination
+            // Show: pending data OR approved/rejected data less than 2 days old
+            $twoDaysAgo = date('Y-m-d H:i:s', strtotime('-2 days'));
+            
             $result = $db->table('waste_management')
                 ->select('waste_management.*, unit.nama_unit')
                 ->join('unit', 'unit.id = waste_management.unit_id', 'left')
+                ->groupStart()
+                    ->whereIn('waste_management.status', ['draft', 'dikirim', 'review'])
+                    ->orGroupStart()
+                        ->whereIn('waste_management.status', ['disetujui', 'ditolak'])
+                        ->where('waste_management.action_timestamp IS NOT NULL')
+                        ->where('waste_management.action_timestamp >=', $twoDaysAgo)
+                    ->groupEnd()
+                ->groupEnd()
                 ->orderBy('waste_management.created_at', 'DESC')
                 ->limit($perPage, $offset)
                 ->get()

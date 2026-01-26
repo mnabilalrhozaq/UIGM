@@ -34,7 +34,7 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
     <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
-    <?= $this->include('partials/sidebar_pengelola_tps') ?>
+    <?= $this->include('partials/sidebar') ?>
     
     <div class="main-content">
         <div class="page-header">
@@ -63,6 +63,61 @@ $tps_info = $tps_info ?? ['nama_unit' => 'TPS'];
         <div class="alert alert-danger">
             <i class="fas fa-exclamation-triangle"></i>
             <?= $error ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- Statistics Cards -->
+        <?php if (!empty($stats)): ?>
+        <div class="stats-grid mb-4">
+            <div class="stat-card primary">
+                <div class="stat-icon">
+                    <i class="fas fa-list"></i>
+                </div>
+                <div class="stat-content">
+                    <h3><?= $stats['total_entries'] ?? 0 ?></h3>
+                    <p>Total Data</p>
+                </div>
+            </div>
+            
+            <div class="stat-card warning">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-content">
+                    <h3><?= $stats['pending_count'] ?? 0 ?></h3>
+                    <p>Menunggu Review</p>
+                </div>
+            </div>
+            
+            <div class="stat-card success">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3><?= $stats['approved_count'] ?? 0 ?></h3>
+                    <p>Disetujui</p>
+                </div>
+            </div>
+            
+            <div class="stat-card secondary">
+                <div class="stat-icon">
+                    <i class="fas fa-file"></i>
+                </div>
+                <div class="stat-content">
+                    <h3><?= $stats['draft_count'] ?? 0 ?></h3>
+                    <p>Draft</p>
+                </div>
+            </div>
+            
+            <div class="stat-card info">
+                <div class="stat-icon">
+                    <i class="fas fa-weight-hanging"></i>
+                </div>
+                <div class="stat-content">
+                    <h3><?= formatNumber($stats['total_weight'] ?? 0) ?> kg</h3>
+                    <p>Total Berat</p>
+                </div>
+            </div>
         </div>
         <?php endif; ?>
 
@@ -814,6 +869,81 @@ body {
     font-size: 18px;
 }
 
+/* ===== STATISTICS CARDS ===== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card .stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    font-size: 24px;
+    color: white;
+    flex-shrink: 0;
+}
+
+.stat-card.primary .stat-icon {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-card.warning .stat-icon {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-card.success .stat-icon {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stat-card.secondary .stat-icon {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+
+.stat-card.info .stat-icon {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.stat-card .stat-content {
+    flex: 1;
+}
+
+.stat-card .stat-content h3 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+}
+
+.stat-card .stat-content p {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin: 0;
+    font-weight: 500;
+}
+
 /* ===== ALERTS ===== */
 .alert {
     border-radius: 10px;
@@ -893,6 +1023,27 @@ body {
     .action-buttons {
         flex-direction: column;
     }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .stat-card .stat-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+        margin-right: 15px;
+    }
+    
+    .stat-card .stat-content h3 {
+        font-size: 24px;
+    }
+
     
     .card-header {
         padding: 15px 20px;

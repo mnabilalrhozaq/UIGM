@@ -28,7 +28,8 @@ class WasteService
             return [
                 'waste_list' => $this->getWasteList($tpsId),
                 'categories' => $categories,
-                'tps_info' => $this->getTpsInfo($tpsId)
+                'tps_info' => $this->getTpsInfo($tpsId),
+                'stats' => $this->getWasteStats($tpsId)
             ];
         } catch (\Exception $e) {
             log_message('error', 'TPS Waste Service Error: ' . $e->getMessage());
@@ -38,7 +39,8 @@ class WasteService
             return [
                 'waste_list' => [],
                 'categories' => [],
-                'tps_info' => null
+                'tps_info' => null,
+                'stats' => $this->getDefaultStats()
             ];
         }
     }
@@ -294,6 +296,9 @@ class WasteService
                 }
             }
 
+            // Get monthly summary
+            $monthlySummary = $this->getMonthlySummary($tpsId);
+
             // Prepare data for PDF
             $data = [
                 'title' => 'Laporan Data Sampah TPS',
@@ -303,6 +308,7 @@ class WasteService
                 'total_berat' => $totalBerat,
                 'total_nilai' => $totalNilai,
                 'status_count' => $statusCount,
+                'monthly_summary' => $monthlySummary,
                 'generated_at' => date('d/m/Y H:i:s')
             ];
 
@@ -399,5 +405,58 @@ class WasteService
         }
 
         return ['valid' => true, 'message' => ''];
+    }
+
+    private function getWasteStats(int $tpsId): array
+    {
+        $today = date('Y-m-d');
+        $thisMonth = date('Y-m');
+
+        try {
+            return [
+                'total_entries' => $this->wasteModel->where('unit_id', $tpsId)->countAllResults(),
+                'pending_count' => $this->wasteModel->where('unit_id', $tpsId)->whereIn('status', ['dikirim', 'review'])->countAllResults(),
+                'approved_count' => $this->wasteModel->where('unit_id', $tpsId)->where('status', 'disetujui')->countAllResults(),
+                'draft_count' => $this->wasteModel->where('unit_id', $tpsId)->where('status', 'draft')->countAllResults(),
+                'total_weight' => $this->wasteModel
+                    ->selectSum('berat_kg')
+                    ->where('unit_id', $tpsId)
+                    ->get()
+                    ->getRow()
+                    ->berat_kg ?? 0
+            ];
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting TPS waste stats: ' . $e->getMessage());
+            return $this->getDefaultStats();
+        }
+    }
+
+    private function getDefaultStats(): array
+    {
+        return [
+            'total_entries' => 0,
+            'pending_count' => 0,
+            'approved_count' => 0,
+            'draft_count' => 0,
+            'total_weight' => 0
+        ];
+    }
+
+    private function getMonthlySummary(int $tpsId): array
+    {
+        $currentYear = date('Y');
+        
+        try {
+            return $this->wasteModel
+                ->select('MONTH(created_at) as month, COUNT(*) as count, SUM(berat_kg) as total_weight')
+                ->where('unit_id', $tpsId)
+                ->where('YEAR(created_at)', $currentYear)
+                ->groupBy('MONTH(created_at)')
+                ->orderBy('MONTH(created_at)', 'ASC')
+                ->findAll();
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting monthly summary: ' . $e->getMessage());
+            return [];
+        }
     }
 }

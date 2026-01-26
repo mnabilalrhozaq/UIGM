@@ -231,7 +231,7 @@ class LaporanWasteService
                     SUM(CASE WHEN lw.status = 'rejected' THEN lw.berat_kg ELSE 0 END) as total_berat_ditolak,
                     SUM(CASE WHEN lw.status = 'approved' THEN lw.nilai_rupiah ELSE 0 END) as total_nilai_disetujui,
                     SUM(CASE WHEN lw.status = 'rejected' THEN lw.nilai_rupiah ELSE 0 END) as total_nilai_ditolak
-                FROM unit u
+                FROM units u
                 LEFT JOIN laporan_waste lw ON lw.unit_id = u.id AND lw.status IN ('approved', 'rejected')";
         
         $params = [];
@@ -267,7 +267,7 @@ class LaporanWasteService
     private function countRekapPerUnit(array $filters, $db): int
     {
         $sql = "SELECT COUNT(DISTINCT u.id) as total
-                FROM unit u
+                FROM units u
                 LEFT JOIN laporan_waste lw ON lw.unit_id = u.id AND lw.status IN ('approved', 'rejected')";
         
         $params = [];
@@ -423,8 +423,8 @@ class LaporanWasteService
             $pages = [
                 'disetujui' => 1,
                 'ditolak' => 1,
-                'jenis' => 1,
-                'unit' => 1
+                'rekap_jenis' => 1,
+                'rekap_unit' => 1
             ];
             $perPage = 10000; // Ambil semua data
             

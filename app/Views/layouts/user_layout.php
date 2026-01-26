@@ -57,7 +57,7 @@
 </head>
 <body>
     <!-- Include Sidebar -->
-    <?= $this->include('partials/sidebar_user') ?>
+    <?= $this->include('partials/sidebar') ?>
 
     <!-- Main Content -->
     <div class="main-content">

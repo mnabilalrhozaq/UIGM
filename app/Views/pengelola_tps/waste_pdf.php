@@ -124,6 +124,43 @@
             text-align: right;
             font-weight: bold;
         }
+        .monthly-summary-box {
+            background: #fff3cd;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        .monthly-summary-box h3 {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            color: #856404;
+        }
+        .monthly-grid {
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .month-item {
+            display: table-cell;
+            width: 8.33%;
+            text-align: center;
+            padding: 8px 5px;
+            border: 1px solid #ddd;
+            background: white;
+        }
+        .month-name {
+            font-weight: bold;
+            font-size: 10px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .month-data {
+            font-size: 9px;
+            color: #666;
+        }
+        .month-data div {
+            margin: 2px 0;
+        }
     </style>
 </head>
 <body>
@@ -226,6 +263,30 @@
             </tr>
         </table>
     </div>
+
+    <?php if (!empty($monthly_summary)): ?>
+    <div class="monthly-summary-box">
+        <h3>RINGKASAN BULANAN <?= date('Y') ?></h3>
+        <div class="monthly-grid">
+            <?php 
+            $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            $monthlyData = [];
+            foreach ($monthly_summary as $data) {
+                $monthlyData[$data['month']] = $data;
+            }
+            ?>
+            <?php for ($i = 1; $i <= 12; $i++): ?>
+            <div class="month-item">
+                <div class="month-name"><?= $months[$i-1] ?></div>
+                <div class="month-data">
+                    <div><?= $monthlyData[$i]['count'] ?? 0 ?> data</div>
+                    <div><?= number_format($monthlyData[$i]['total_weight'] ?? 0, 0, ',', '.') ?> kg</div>
+                </div>
+            </div>
+            <?php endfor; ?>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <div class="footer">
         <p>Dokumen ini digenerate secara otomatis oleh sistem UI GreenMetric POLBAN</p>

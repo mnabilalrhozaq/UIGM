@@ -88,12 +88,12 @@ class DashboardService
             
             'approved_count' => $this->wasteModel
                 ->where('unit_id', $unitId)
-                ->where('status', 'approved')
+                ->where('status', 'disetujui')
                 ->countAllResults(),
             
             'pending_count' => $this->wasteModel
                 ->where('unit_id', $unitId)
-                ->where('status', 'pending')
+                ->whereIn('status', ['dikirim', 'review'])
                 ->countAllResults(),
             
             'weight_today' => $this->wasteModel
@@ -164,14 +164,21 @@ class DashboardService
         try {
             $db = \Config\Database::connect();
             
+            // Get total berat
+            $totalBeratQuery = $db->table('waste_management')
+                ->selectSum('berat_kg')
+                ->where('unit_id', $unitId)
+                ->get()
+                ->getRow();
+            
             return [
                 'disetujui' => $db->table('waste_management')
                     ->where('unit_id', $unitId)
                     ->where('status', 'disetujui')
                     ->countAllResults(),
-                'ditolak' => $db->table('laporan_waste')
+                'ditolak' => $db->table('waste_management')
                     ->where('unit_id', $unitId)
-                    ->where('status', 'rejected')
+                    ->where('status', 'ditolak')
                     ->countAllResults(),
                 'menunggu_review' => $db->table('waste_management')
                     ->where('unit_id', $unitId)
@@ -180,11 +187,12 @@ class DashboardService
                 'draft' => $db->table('waste_management')
                     ->where('unit_id', $unitId)
                     ->where('status', 'draft')
-                    ->countAllResults()
+                    ->countAllResults(),
+                'total_berat' => $totalBeratQuery->berat_kg ?? 0
             ];
         } catch (\Exception $e) {
             log_message('error', 'Error getting waste overall stats: ' . $e->getMessage());
-            return ['disetujui' => 0, 'ditolak' => 0, 'menunggu_review' => 0, 'draft' => 0];
+            return ['disetujui' => 0, 'ditolak' => 0, 'menunggu_review' => 0, 'draft' => 0, 'total_berat' => 0];
         }
     }
     
@@ -274,11 +282,13 @@ class DashboardService
         switch ($status) {
             case 'draft':
                 return 'edit';
-            case 'pending':
+            case 'dikirim':
+            case 'review':
                 return 'clock';
-            case 'approved':
+            case 'disetujui':
                 return 'check-circle';
-            case 'rejected':
+            case 'ditolak':
+            case 'perlu_revisi':
                 return 'x-circle';
             default:
                 return 'circle';
@@ -293,11 +303,13 @@ class DashboardService
         switch ($waste['status']) {
             case 'draft':
                 return "Data {$kategori} {$berat}kg disimpan sebagai draft";
-            case 'pending':
+            case 'dikirim':
+            case 'review':
                 return "Data {$kategori} {$berat}kg dikirim untuk review";
-            case 'approved':
+            case 'disetujui':
                 return "Data {$kategori} {$berat}kg disetujui";
-            case 'rejected':
+            case 'ditolak':
+            case 'perlu_revisi':
                 return "Data {$kategori} {$berat}kg ditolak";
             default:
                 return "Data {$kategori} {$berat}kg diperbarui";

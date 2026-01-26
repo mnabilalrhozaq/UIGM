@@ -60,7 +60,8 @@ class Waste extends BaseController
                 'categories' => $categories, // Untuk cards (dengan pagination)
                 'allCategories' => $allCategories, // Untuk dropdown form (semua data)
                 'pagerHarga' => $pagerHarga,
-                'tps_info' => $data['tps_info']
+                'tps_info' => $data['tps_info'],
+                'stats' => $data['stats']
             ];
 
             return view('pengelola_tps/waste', $viewData);
@@ -85,6 +86,7 @@ class Waste extends BaseController
                 'allCategories' => [], // Fallback kosong
                 'pagerHarga' => null,
                 'tps_info' => null,
+                'stats' => [],
                 'error' => 'Terjadi kesalahan saat memuat data sampah'
             ]);
         }

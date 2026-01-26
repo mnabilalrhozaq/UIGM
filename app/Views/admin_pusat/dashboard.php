@@ -49,7 +49,7 @@ if (!function_exists('formatCurrency')) {
     <link href="<?= base_url('/css/mobile-responsive.css') ?>" rel="stylesheet">
 </head>
 <body>
-    <?= $this->include('partials/sidebar_admin_pusat') ?>
+    <?= $this->include('partials/sidebar') ?>
     
     <div class="main-content">
         <!-- Dashboard Header -->
@@ -58,7 +58,11 @@ if (!function_exists('formatCurrency')) {
             <p>Monitoring dan Kelola Sistem Waste Management POLBAN</p>
         </div>
 
-        <!-- Statistics Cards -->
+        <!-- Disabled Features Alert -->
+        <?= renderDisabledFeaturesAlert('admin_pusat') ?>
+
+        <!-- Statistics Cards - Feature Toggle: dashboard_statistics_cards -->
+        <?php if (isFeatureEnabled('dashboard_statistics_cards', 'admin_pusat')): ?>
         <div class="stats-grid">
             <div class="stat-card primary">
                 <div class="stat-icon">
@@ -110,10 +114,12 @@ if (!function_exists('formatCurrency')) {
                 </div>
             </div>
         </div>
+        <?php endif; ?>
 
         <!-- Main Content Area -->
         <div class="content-grid">
-            <!-- Recent Waste Submissions -->
+            <!-- Recent Waste Submissions - Feature Toggle: dashboard_waste_summary -->
+            <?php if (isFeatureEnabled('dashboard_waste_summary', 'admin_pusat')): ?>
             <div class="content-main">
                 <div class="card">
                     <div class="card-header">
@@ -194,6 +200,7 @@ if (!function_exists('formatCurrency')) {
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
 
             <!-- Sidebar Content -->
             <div class="content-sidebar">
@@ -228,7 +235,8 @@ if (!function_exists('formatCurrency')) {
                     </div>
                 </div>
 
-                <!-- Recent Price Changes -->
+                <!-- Recent Price Changes - Feature Toggle: dashboard_recent_activity -->
+                <?php if (isFeatureEnabled('dashboard_recent_activity', 'admin_pusat')): ?>
                 <div class="card">
                     <div class="card-header">
                         <h3><i class="fas fa-history"></i> Perubahan Harga Terbaru (Hari Ini)</h3>
@@ -312,6 +320,7 @@ if (!function_exists('formatCurrency')) {
                         <?php endif; ?>
                     </div>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

@@ -398,9 +398,10 @@ class WasteService
         try {
             return [
                 'total_entries' => $this->wasteModel->where('unit_id', $unitId)->countAllResults(),
-                'pending_count' => $this->wasteModel->where('unit_id', $unitId)->where('status', 'pending')->countAllResults(),
-                'approved_count' => $this->wasteModel->where('unit_id', $unitId)->where('status', 'approved')->countAllResults(),
-                'rejected_count' => $this->wasteModel->where('unit_id', $unitId)->where('status', 'rejected')->countAllResults(),
+                'pending_count' => $this->wasteModel->where('unit_id', $unitId)->whereIn('status', ['dikirim', 'review'])->countAllResults(),
+                'approved_count' => $this->wasteModel->where('unit_id', $unitId)->where('status', 'disetujui')->countAllResults(),
+                'rejected_count' => $this->wasteModel->where('unit_id', $unitId)->where('status', 'ditolak')->countAllResults(),
+                'draft_count' => $this->wasteModel->where('unit_id', $unitId)->where('status', 'draft')->countAllResults(),
                 'total_weight' => $this->wasteModel
                     ->selectSum('berat_kg')
                     ->where('unit_id', $unitId)
@@ -458,6 +459,7 @@ class WasteService
             'pending_count' => 0,
             'approved_count' => 0,
             'rejected_count' => 0,
+            'draft_count' => 0,
             'total_weight' => 0,
             'weight_today' => 0,
             'weight_month' => 0

@@ -94,16 +94,6 @@ if (!function_exists('formatCurrency')) {
                 </div>
             </div>
             
-            <div class="stat-card info">
-                <div class="stat-icon">
-                    <i class="fas fa-weight-hanging"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?= formatNumber(displayStat($stats, 'total_berat')) ?> kg</h3>
-                    <p>Total Berat Sampah</p>
-                </div>
-            </div>
-            
             <div class="stat-card secondary">
                 <div class="stat-icon">
                     <i class="fas fa-money-bill-wave"></i>

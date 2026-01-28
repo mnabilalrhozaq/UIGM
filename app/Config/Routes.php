@@ -32,6 +32,7 @@ $routes->group('admin-pusat', ['filter' => 'role:admin_pusat,super_admin'], func
     require APPPATH . 'Config/Routes/Admin/laporan_waste.php';
     require APPPATH . 'Config/Routes/Admin/profil.php';
     require APPPATH . 'Config/Routes/Admin/pengaturan.php';
+    require APPPATH . 'Config/Routes/Admin/uigm_categories.php';
 });
 
 // ================================================

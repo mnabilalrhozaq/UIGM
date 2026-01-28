@@ -4,29 +4,53 @@ namespace App\Controllers;
 
 class Home extends BaseController
 {
-    /**
-     * Home page - redirects to appropriate dashboard based on user role
-     * 
-     * @return \CodeIgniter\HTTP\RedirectResponse
-     */
     public function index()
     {
-        // Check if user is logged in
-        $user = session()->get('user');
-        
-        if (session()->get('isLoggedIn') && $user) {
-            $role = $user['role'] ?? null;
+        try {
+            $db = \Config\Database::connect();
             
-            // Redirect to appropriate dashboard based on role using match expression
-            return match ($role) {
-                'admin_pusat', 'super_admin' => redirect()->to('/admin-pusat/dashboard'),
-                'user' => redirect()->to('/user/dashboard'),
-                'pengelola_tps' => redirect()->to('/pengelola-tps/dashboard'),
-                default => redirect()->to('/auth/login')
-            };
+            // Get statistics for landing page (only waste data that's real)
+            $stats = [
+                // Total data from waste_management table
+                'total_data' => $db->table('waste_management')->countAllResults(),
+                
+                // Total weight from waste_management
+                'total_berat' => $db->table('waste_management')
+                    ->selectSum('berat_kg')
+                    ->get()
+                    ->getRow()
+                    ->berat_kg ?? 0,
+                
+                // Total units (all units, not just TPS)
+                'total_tps' => $db->table('unit')->countAllResults(),
+                
+                // Approved waste data
+                'disetujui' => $db->table('waste_management')
+                    ->where('status', 'disetujui')
+                    ->countAllResults(),
+                
+                // Waste that can be sold (has economic value)
+                'bisa_dijual' => $db->table('waste_management')
+                    ->where('kategori_sampah', 'bisa_dijual')
+                    ->countAllResults()
+            ];
+            
+            return view('landing', ['stats' => $stats]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Landing Page Error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            
+            // Return with default stats if error
+            return view('landing', [
+                'stats' => [
+                    'total_data' => 0,
+                    'total_berat' => 0,
+                    'total_tps' => 0,
+                    'disetujui' => 0,
+                    'bisa_dijual' => 0
+                ]
+            ]);
         }
-        
-        // If not logged in, redirect to login
-        return redirect()->to('/auth/login');
     }
 }

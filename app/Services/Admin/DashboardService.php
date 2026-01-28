@@ -93,41 +93,44 @@ class DashboardService
     private function getMainStatistics(): array
     {
         try {
+            $db = \Config\Database::connect();
+            
             // Count users
             $totalUsers = $this->userModel->countAllResults(false);
             
-            // Count submissions by status
-            $menungguReview = $this->wasteModel->where('status', 'dikirim')->countAllResults(false);
+            // Count approved data from waste_management
             $disetujui = $this->wasteModel->where('status', 'disetujui')->countAllResults(false);
-            $ditolak = $this->wasteModel->where('status', 'ditolak')->countAllResults(false);
             
-            // Calculate total weight and value (approved only)
-            $approvedWaste = $this->wasteModel
-                ->select('SUM(berat_kg) as total_berat, SUM(nilai_rupiah) as total_nilai')
+            // Count rejected data from laporan_waste table
+            $ditolak = $db->table('laporan_waste')
+                ->where('status', 'rejected')
+                ->countAllResults();
+            
+            // Calculate total value from approved waste (kategori bisa_dijual only)
+            $totalNilaiQuery = $db->table('waste_management')
+                ->selectSum('nilai_rupiah')
                 ->where('status', 'disetujui')
-                ->first();
+                ->where('kategori_sampah', 'bisa_dijual')
+                ->get()
+                ->getRow();
             
-            $totalBerat = $approvedWaste['total_berat'] ?? 0;
-            $totalNilai = $approvedWaste['total_nilai'] ?? 0;
+            $totalNilai = $totalNilaiQuery->nilai_rupiah ?? 0;
 
             return [
                 'total_users' => $totalUsers,
-                'menunggu_review' => $menungguReview,
                 'disetujui' => $disetujui,
                 'ditolak' => $ditolak,
-                'total_berat' => (float)$totalBerat,
                 'total_nilai' => (float)$totalNilai
             ];
 
         } catch (\Exception $e) {
             log_message('error', 'DashboardService getMainStatistics error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
             
             return [
                 'total_users' => 0,
-                'menunggu_review' => 0,
                 'disetujui' => 0,
                 'ditolak' => 0,
-                'total_berat' => 0,
                 'total_nilai' => 0
             ];
         }

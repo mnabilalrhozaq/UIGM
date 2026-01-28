@@ -12,13 +12,59 @@ $menus = [
         'color2' => '#2a5298',
         'items' => [
             ['icon' => 'fa-tachometer-alt', 'label' => 'Dashboard', 'url' => '/admin-pusat/dashboard'],
+            ['section' => 'KATEGORI UIGM'],
+            [
+                'icon' => 'fa-building', 
+                'label' => 'Setting & Infrastructure', 
+                'submenu' => [
+                    ['label' => 'Data Infrastructure', 'url' => '/admin-pusat/infrastructure'],
+                    ['label' => 'Laporan', 'url' => '/admin-pusat/infrastructure/laporan'],
+                ]
+            ],
+            [
+                'icon' => 'fa-bolt', 
+                'label' => 'Energy & Climate', 
+                'submenu' => [
+                    ['label' => 'Data Energi', 'url' => '/admin-pusat/energy'],
+                    ['label' => 'Laporan', 'url' => '/admin-pusat/energy/laporan'],
+                ]
+            ],
+            [
+                'icon' => 'fa-trash-alt', 
+                'label' => 'Waste Management', 
+                'submenu' => [
+                    ['label' => 'Manajemen Data Sampah', 'url' => '/admin-pusat/waste'],
+                    ['label' => 'Manajemen Jenis Sampah', 'url' => '/admin-pusat/manajemen-harga'],
+                    ['label' => 'Laporan Data Sampah', 'url' => '/admin-pusat/laporan-waste'],
+                ]
+            ],
+            [
+                'icon' => 'fa-tint', 
+                'label' => 'Water Management', 
+                'submenu' => [
+                    ['label' => 'Data Air', 'url' => '/admin-pusat/water'],
+                    ['label' => 'Laporan', 'url' => '/admin-pusat/water/laporan'],
+                ]
+            ],
+            [
+                'icon' => 'fa-car', 
+                'label' => 'Transportation', 
+                'submenu' => [
+                    ['label' => 'Data Transportasi', 'url' => '/admin-pusat/transportation'],
+                    ['label' => 'Laporan', 'url' => '/admin-pusat/transportation/laporan'],
+                ]
+            ],
+            [
+                'icon' => 'fa-graduation-cap', 
+                'label' => 'Education & Research', 
+                'submenu' => [
+                    ['label' => 'Data Pendidikan', 'url' => '/admin-pusat/education'],
+                    ['label' => 'Laporan', 'url' => '/admin-pusat/education/laporan'],
+                ]
+            ],
             ['section' => 'DATA MANAGEMENT'],
-            ['icon' => 'fa-trash-alt', 'label' => 'Manajemen Data Sampah', 'url' => '/admin-pusat/waste'],
-            ['icon' => 'fa-recycle', 'label' => 'Manajemen Jenis Sampah', 'url' => '/admin-pusat/manajemen-harga'],
             ['icon' => 'fa-users', 'label' => 'Manajemen Akun', 'url' => '/admin-pusat/user-management'],
             ['icon' => 'fa-toggle-on', 'label' => 'Kelola Fitur', 'url' => '/admin-pusat/feature-toggle'],
-            ['section' => 'REPORTS & ANALYTICS'],
-            ['icon' => 'fa-chart-pie', 'label' => 'Laporan Data Sampah', 'url' => '/admin-pusat/laporan-waste'],
             ['section' => 'SYSTEM'],
             ['icon' => 'fa-user-circle', 'label' => 'Profil Akun', 'url' => '/admin-pusat/profil'],
         ]
@@ -83,6 +129,23 @@ $currentMenu = $menus[$role] ?? $menus['user'];
                     <div class="menu-section-title">
                         <i class="fas fa-database"></i>
                         <?= $item['section'] ?>
+                    </div>
+                </div>
+            <?php elseif (isset($item['submenu'])): ?>
+                <div class="menu-item-with-submenu">
+                    <a href="javascript:void(0)" class="menu-item menu-toggle">
+                        <i class="fas <?= $item['icon'] ?>"></i>
+                        <span><?= $item['label'] ?></span>
+                        <i class="fas fa-chevron-down submenu-arrow"></i>
+                    </a>
+                    <div class="submenu">
+                        <?php foreach ($item['submenu'] as $subitem): ?>
+                            <a href="<?= base_url($subitem['url']) ?>" 
+                               class="submenu-item <?= (strpos($currentUrl, $subitem['url']) !== false) ? 'active' : '' ?>">
+                                <i class="fas fa-circle submenu-dot"></i>
+                                <span><?= $subitem['label'] ?></span>
+                            </a>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             <?php else: ?>
@@ -205,19 +268,19 @@ $currentMenu = $menus[$role] ?? $menus['user'];
     text-decoration: none;
     transition: all 0.3s ease;
     border-left: 3px solid transparent;
+    position: relative;
 }
 
 .menu-item:hover {
     background: rgba(255, 255, 255, 0.1);
     color: white;
     border-left-color: #27ae60;
-    transform: translateX(5px);
 }
 
 .menu-item.active {
     background: rgba(39, 174, 96, 0.2);
     color: #27ae60;
-    border-right: 3px solid #27ae60;
+    border-left: 3px solid #27ae60;
     font-weight: 600;
 }
 
@@ -230,6 +293,65 @@ $currentMenu = $menus[$role] ?? $menus['user'];
 .menu-item span {
     font-size: 14px;
     font-weight: 500;
+    flex: 1;
+}
+
+/* Submenu Styles */
+.menu-item-with-submenu {
+    position: relative;
+}
+
+.menu-toggle {
+    cursor: pointer;
+}
+
+.submenu-arrow {
+    margin-left: auto;
+    font-size: 12px;
+    transition: transform 0.3s ease;
+}
+
+.menu-item-with-submenu.open .submenu-arrow {
+    transform: rotate(180deg);
+}
+
+.submenu {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.menu-item-with-submenu.open .submenu {
+    max-height: 500px;
+}
+
+.submenu-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px 12px 55px;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 13px;
+}
+
+.submenu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    padding-left: 60px;
+}
+
+.submenu-item.active {
+    background: rgba(39, 174, 96, 0.15);
+    color: #27ae60;
+    font-weight: 600;
+    border-left: 3px solid #27ae60;
+}
+
+.submenu-dot {
+    font-size: 6px;
+    margin-right: 10px;
 }
 
 .logout-item {
@@ -274,3 +396,36 @@ $currentMenu = $menus[$role] ?? $menus['user'];
     }
 }
 </style>
+
+<script>
+// Toggle submenu
+document.addEventListener('DOMContentLoaded', function() {
+    const menuToggles = document.querySelectorAll('.menu-toggle');
+    
+    menuToggles.forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            const parent = this.closest('.menu-item-with-submenu');
+            
+            // Close other submenus
+            document.querySelectorAll('.menu-item-with-submenu').forEach(item => {
+                if (item !== parent) {
+                    item.classList.remove('open');
+                }
+            });
+            
+            // Toggle current submenu
+            parent.classList.toggle('open');
+        });
+    });
+    
+    // Auto-open submenu if current page is in submenu
+    const activeSubmenuItem = document.querySelector('.submenu-item.active');
+    if (activeSubmenuItem) {
+        const parent = activeSubmenuItem.closest('.menu-item-with-submenu');
+        if (parent) {
+            parent.classList.add('open');
+        }
+    }
+});
+</script>

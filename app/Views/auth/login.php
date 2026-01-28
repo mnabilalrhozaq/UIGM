@@ -64,6 +64,31 @@
             background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%);
         }
 
+        .btn-back {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            background: var(--light-bg);
+            border: 2px solid #e9ecef;
+            color: var(--text-dark);
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .btn-back:hover {
+            background: white;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateX(-3px);
+        }
+
         .login-header {
             text-align: center;
             margin-bottom: 2rem;
@@ -254,6 +279,11 @@
 <body>
     <div class="login-container">
         <div class="login-card">
+            <!-- Back Button -->
+            <a href="<?= base_url('/') ?>" class="btn-back" title="Kembali ke Beranda">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+
             <div class="loading-overlay" id="loadingOverlay">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>

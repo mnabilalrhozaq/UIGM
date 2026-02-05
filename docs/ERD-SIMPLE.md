@@ -96,12 +96,10 @@ graph LR
     A[admin_pusat] -->|Full Access| ALL[All Features]
     B[pengelola_tps] -->|Review| WM[Waste Management]
     C[user] -->|Input| WD[Waste Data]
-    D[admin_unit] -->|Manage| UD[Unit Data]
     
     style A fill:#ff6b6b
     style B fill:#4ecdc4
     style C fill:#95e1d3
-    style D fill:#f38181
 ```
 
 ## Key Relationships
@@ -138,10 +136,9 @@ graph LR
 - `ditolak` - Final rejection
 
 ### User Roles
-- `admin_pusat` - Central admin
-- `pengelola_tps` - TPS manager
-- `user` - Regular user
-- `admin_unit` - Unit admin
+- `admin_pusat` - Admin pusat (full access ke semua fitur)
+- `pengelola_tps` - Pengelola TPS (review waste dari user)
+- `user` - User biasa (input data sampah)
 
 ## Important Notes
 

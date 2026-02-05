@@ -47,7 +47,7 @@ erDiagram
         varchar email UK
         varchar password
         varchar nama_lengkap
-        enum role "admin_pusat, admin_unit, user, pengelola_tps"
+        enum role "admin_pusat, pengelola_tps, user"
         int unit_id FK
         varchar gedung "Gedung user"
         boolean status_aktif
@@ -311,10 +311,9 @@ draft → dikirim_ke_tps → disetujui_tps/ditolak_tps → dikirim_ke_admin → 
 
 ## User Roles
 
-1. **admin_pusat**: Admin pusat (full access)
-2. **admin_unit**: Admin unit (manage unit data)
-3. **user**: User biasa (input waste data)
-4. **pengelola_tps**: Pengelola TPS (review waste from users)
+1. **admin_pusat**: Admin pusat (full access ke semua fitur)
+2. **pengelola_tps**: Pengelola TPS (review waste data dari users)
+3. **user**: User biasa (input data sampah)
 
 ## Key Features
 
